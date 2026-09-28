@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Magic spheres A-E. Each ability becomes a dnd5e activity on the sphere item.
  * Talent tuples: [name, category, advanced, summary, extra]. `extra.cost` is an augment cost in spell points,
  * `extra.dt` a damage type for blast types, `extra.bonus` a flat damage bonus formula.

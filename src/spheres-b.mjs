@@ -1,4 +1,4 @@
-﻿/** Magic spheres F-W. Same format as spheres-a.mjs. */
+/** Magic spheres F-W. Same format as spheres-a.mjs. */
 
 const NO_CONC = { key: "noConc", label: "Lasts without concentration", cost: 2 };
 
