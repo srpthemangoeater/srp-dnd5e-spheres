@@ -38,7 +38,8 @@ export const TEMPLATES = {
   builder: `modules/${MODULE_ID}/templates/tradition-builder.hbs`,
   cast: `modules/${MODULE_ID}/templates/cast-dialog.hbs`,
   browserFilters: `modules/${MODULE_ID}/templates/browser-filters.hbs`,
-  browserResults: `modules/${MODULE_ID}/templates/browser-results.hbs`
+  browserResults: `modules/${MODULE_ID}/templates/browser-results.hbs`,
+  freePicks: `modules/${MODULE_ID}/templates/free-picks.hbs`
 };
 
 export const PACKS = {

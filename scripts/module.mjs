@@ -4,6 +4,7 @@ import { CastDialog, registerCastHooks } from "./cast.mjs";
 import { postItemToChat, postTraditionCard, registerChatHooks, resolveRow } from "./chat.mjs";
 import { registerConfig } from "./config.mjs";
 import { registerConsumptionHooks } from "./consumption.mjs";
+import { FreePicksDialog, registerFreePickHooks } from "./free-picks.mjs";
 import { registerSettings } from "./settings.mjs";
 import { registerSheetTab, registerTidy } from "./sheets.mjs";
 import { computeSpheres, computeTalents, drawbackBonus, patchRollData, spellPointState } from "./spell-points.mjs";
@@ -17,6 +18,7 @@ Hooks.once("init", () => {
   registerConsumptionHooks();
   registerCastHooks();
   registerChatHooks();
+  registerFreePickHooks();
   // Actors are prepared before the setup hook, so roll data must be patched here.
   patchRollData();
   foundry.applications.handlebars.loadTemplates([TEMPLATES.content]);
@@ -31,6 +33,7 @@ Hooks.once("ready", () => {
     postItemToChat, postTraditionCard, resolveRow,
     openBuilder: actor => new TraditionBuilder(actor).render({ force: true }),
     openCast: activity => new CastDialog(activity).render({ force: true }),
-    openBrowser: actor => new SpheresBrowser(actor).render({ force: true })
+    openBrowser: actor => new SpheresBrowser(actor).render({ force: true }),
+    openFreePicks: sphere => new FreePicksDialog(sphere).render({ force: true })
   };
 });

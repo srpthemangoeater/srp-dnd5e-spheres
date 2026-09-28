@@ -2,7 +2,7 @@
   "id": "dnd5e-spheres",
   "title": "dnd5e Spheres",
   "description": "Casting traditions, spell points, spherecaster classes, magic spheres and talents for the dnd5e system. Compatible with the Spheres 5E rules.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14.368"

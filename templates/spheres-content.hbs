@@ -1,15 +1,18 @@
-{{!-- Per-item controls: post to chat always; edit and delete in edit mode. --}}
-{{#*inline "itemControls"}}
-<span class="item-controls">
-    <a class="item-control" data-spheres-action="chat" data-spheres-item-id="{{ id }}"
-       data-tooltip="DND5E-SPHERES.PostToChat" aria-label="{{ localize 'DND5E-SPHERES.PostToChat' }}"><i class="fas fa-comment" inert></i></a>
-    {{#if editable}}
-    <a class="item-control" data-spheres-action="edit" data-spheres-item-id="{{ id }}"
-       data-tooltip="DND5E-SPHERES.EditItem" aria-label="{{ localize 'DND5E-SPHERES.EditItem' }}"><i class="fas fa-pen" inert></i></a>
-    <a class="item-control delete" data-spheres-action="delete" data-spheres-item-id="{{ id }}"
-       data-tooltip="DND5E-SPHERES.DeleteItem" aria-label="{{ localize 'DND5E-SPHERES.DeleteItem' }}"><i class="fas fa-trash" inert></i></a>
-    {{/if}}
-</span>
+{{!-- One accordion row: the header toggles the description. Right-click opens the context menu. --}}
+{{#*inline "row"}}
+<li class="sp-row {{#if row.open}}open{{/if}}" data-collapse-key="{{ row.key }}" data-sort-id="{{ row.id }}"
+    data-spheres-context data-context-type="{{ type }}" data-spheres-item-id="{{ row.id }}"
+    {{#if editable}}draggable="true"{{/if}}>
+    <div class="sp-row-head" data-spheres-toggle role="button" tabindex="0" aria-expanded="{{#if row.open}}true{{else}}false{{/if}}">
+        <i class="fas fa-chevron-right sp-chevron" inert></i>
+        <img src="{{ row.img }}" alt="">
+        <span class="sp-row-name">{{ row.name }}</span>
+        <span class="sp-badges">{{> @partial-block }}</span>
+    </div>
+    <div class="sp-row-body">
+        {{#each row.description}}<p>{{ this }}</p>{{else}}<p class="hint">{{ localize "DND5E-SPHERES.NoDescription" }}</p>{{/each}}
+    </div>
+</li>
 {{/inline}}
 
 <div class="dnd5e-spheres-content {{#if spheres.editable}}editing{{/if}}">
@@ -18,9 +21,9 @@
     {{!-- Casting tradition --}}
     <div class="spheres-card tradition">
         <div class="spheres-card-header">
-            <div>
+            <div {{#if tradition}}data-spheres-context data-context-type="tradition"{{/if}}>
                 {{#if tradition}}
-                <a class="tradition-name" data-spheres-action="openItem" data-spheres-item-id="{{ tradition.id }}">{{ tradition.name }}</a>
+                <span class="tradition-name">{{ tradition.name }}</span>
                 {{else}}
                 <span class="tradition-name empty">{{ localize "DND5E-SPHERES.NoTradition" }}</span>
                 {{/if}}
@@ -34,40 +37,34 @@
                     {{/if}}
                 </div>
             </div>
-            <span class="header-buttons">
-                {{#if tradition}}
-                <button type="button" class="spheres-button icon" data-spheres-action="traditionChat"
-                        data-tooltip="DND5E-SPHERES.PostToChat" aria-label="{{ localize 'DND5E-SPHERES.PostToChat' }}">
-                    <i class="fas fa-comment" inert></i>
-                </button>
-                {{/if}}
-                {{#if owner}}
-                <button type="button" class="spheres-button" data-spheres-action="builder">
-                    <i class="fas fa-pen-ruler" inert></i> {{ localize "DND5E-SPHERES.EditTradition" }}
-                </button>
-                {{/if}}
-            </span>
-        </div>
-
-        <div class="spheres-tags" data-sort-group="drawbacks">
-            {{#each drawbacks}}
-            <span class="spheres-tag drawback" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
-                <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}">{{ name }}{{#if (gt count 1)}} &times;{{ count }}{{/if}}{{#if (gt weight 1)}} <span class="weight">({{ weight }})</span>{{/if}}</a>
-                {{> itemControls id=id editable=../editable }}
-            </span>
-            {{/each}}
-        </div>
-        <div class="spheres-tags" data-sort-group="boons">
-            {{#each boons}}
-            <span class="spheres-tag boon" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
-                <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}">{{ name }}</a>
-                {{> itemControls id=id editable=../editable }}
-            </span>
-            {{/each}}
-            {{#if traditionBonus}}
-            <span class="spheres-tag bonus">{{ localize "DND5E-SPHERES.TraditionBonus" bonus=traditionBonus }}</span>
+            {{#if owner}}
+            <button type="button" class="spheres-button" data-spheres-action="builder">
+                <i class="fas fa-pen-ruler" inert></i> {{ localize "DND5E-SPHERES.EditTradition" }}
+            </button>
             {{/if}}
         </div>
+
+        {{#each groups as |group type|}}
+        {{#if group.items.length}}
+        <section class="sp-group {{#if group.open}}open{{/if}}" data-collapse-key="{{ group.key }}">
+            <header class="sp-group-head" data-spheres-toggle role="button" tabindex="0" aria-expanded="{{#if group.open}}true{{else}}false{{/if}}">
+                <i class="fas fa-chevron-right sp-chevron" inert></i>
+                <span>{{ localize (concat "DND5E-SPHERES.Group." type) }}</span>
+                <span class="sp-count">{{ group.items.length }}</span>
+                {{#if (eq type "drawbacks")}}{{#if ../traditionBonus}}<span class="spheres-tag bonus">{{ localize "DND5E-SPHERES.TraditionBonus" bonus=../traditionBonus }}</span>{{/if}}{{/if}}
+            </header>
+            <ol class="sp-list" data-sort-group="{{ type }}">
+                {{#each group.items as |row|}}
+                {{#> row row=row type="item" editable=@root.spheres.editable }}
+                    {{#if (gt row.count 1)}}<span class="spheres-tag">&times;{{ row.count }}</span>{{/if}}
+                    {{#if (gt row.weight 1)}}<span class="spheres-tag">{{ localize "DND5E-SPHERES.Builder.CountsTwo" }}</span>{{/if}}
+                    {{#if row.automated}}<span class="spheres-tag auto">{{ localize "DND5E-SPHERES.Builder.Automated" }}</span>{{/if}}
+                {{/row}}
+                {{/each}}
+            </ol>
+        </section>
+        {{/if}}
+        {{/each}}
     </div>
 
     {{!-- Spell points --}}
@@ -132,56 +129,63 @@
         {{/if}}
         {{#if hasSpheres}}
         <div class="sphere-list" data-sort-group="spheres">
-        {{#each sphereList}}
-        <div class="sphere-entry" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
-            <div class="sphere-head">
-                <span class="sphere-title">
-                    {{#if ../editable}}<i class="fas fa-grip-vertical drag-handle" inert></i>{{/if}}
-                    <a class="sphere-name" data-spheres-action="openItem" data-spheres-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
-                    {{> itemControls id=id editable=../editable }}
-                </span>
+        {{#each sphereList as |sphere|}}
+        <section class="sp-group sphere-entry {{#if sphere.groupOpen}}open{{/if}}" data-collapse-key="{{ sphere.groupKey }}"
+                 data-sort-id="{{ sphere.id }}" {{#if @root.spheres.editable}}draggable="true"{{/if}}>
+            <header class="sp-group-head sphere-head" data-spheres-toggle role="button" tabindex="0"
+                    aria-expanded="{{#if sphere.groupOpen}}true{{else}}false{{/if}}"
+                    data-spheres-context data-context-type="sphere" data-spheres-item-id="{{ sphere.id }}">
+                <i class="fas fa-chevron-right sp-chevron" inert></i>
+                <img src="{{ sphere.img }}" alt="">
+                <span class="sphere-name">{{ sphere.name }}</span>
+                <span class="sp-count">{{ sphere.talents.length }}</span>
+                {{#if sphere.picksLeft}}
+                <button type="button" class="spheres-tag picks" data-spheres-action="freePicks" data-spheres-item-id="{{ sphere.id }}">
+                    <i class="fas fa-gift" inert></i> {{ localize "DND5E-SPHERES.FreePicks.Pending" }}
+                </button>
+                {{/if}}
                 <span class="sphere-abilities">
-                    {{#each abilities}}
-                    <button type="button" class="spheres-button" data-spheres-action="cast" data-spheres-item-id="{{ ../id }}"
+                    {{#each sphere.abilities}}
+                    <button type="button" class="spheres-button" data-spheres-action="cast" data-spheres-item-id="{{ sphere.id }}"
                             data-activity-id="{{ activityId }}" {{#unless @root.spheres.owner}}disabled{{/unless}}>
                         <i class="fas fa-wand-magic-sparkles" inert></i> {{ name }}{{#if cost}} ({{ cost }}){{/if}}
                     </button>
                     {{/each}}
                 </span>
-            </div>
-            {{#if talents.length}}
-            <ul class="spheres-items" data-sort-group="talents-{{ key }}">
-                {{#each talents}}
-                <li class="talent" data-sort-id="{{ id }}" {{#if ../../editable}}draggable="true"{{/if}}>
-                    {{#if ../../editable}}<i class="fas fa-grip-vertical drag-handle" inert></i>{{/if}}
-                    <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
-                    {{#if advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
-                    {{#if free}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Free" }}</span>{{/if}}
-                    {{#if cost}}<span class="spheres-tag">{{ cost }} SP</span>{{/if}}
-                    {{> itemControls id=id editable=../../editable }}
-                </li>
+            </header>
+            <ol class="sp-list" data-sort-group="talents-{{ sphere.key }}">
+                {{#each sphere.talents as |row|}}
+                {{#> row row=row type="talent" editable=@root.spheres.editable }}
+                    {{#if row.category}}<span class="spheres-tag category">{{ row.category }}</span>{{/if}}
+                    {{#if row.advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
+                    {{#if row.freePick}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.FreePicks.Badge" }}</span>
+                    {{else if row.free}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Free" }}</span>{{/if}}
+                    {{#if row.cost}}<span class="spheres-tag cost">{{ row.cost }} SP</span>{{/if}}
+                {{/row}}
+                {{else}}
+                <li class="hint sp-empty">{{ localize "DND5E-SPHERES.NoTalentsYet" }}</li>
                 {{/each}}
-            </ul>
-            {{/if}}
-        </div>
+            </ol>
+        </section>
         {{/each}}
         </div>
         {{#if orphanTalents.length}}
-        <div class="sphere-entry orphan">
-            <div class="sphere-head"><span class="sphere-name">{{ localize "DND5E-SPHERES.OrphanTalents" }}</span></div>
-            <ul class="spheres-items" data-sort-group="orphans">
-                {{#each orphanTalents}}
-                <li class="talent" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
-                    <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
-                    {{> itemControls id=id editable=../editable }}
-                </li>
+        <section class="sp-group open orphan" data-collapse-key="group.orphans">
+            <header class="sp-group-head" data-spheres-toggle role="button" tabindex="0" aria-expanded="true">
+                <i class="fas fa-chevron-right sp-chevron" inert></i>
+                <span>{{ localize "DND5E-SPHERES.OrphanTalents" }}</span>
+            </header>
+            <ol class="sp-list" data-sort-group="orphans">
+                {{#each orphanTalents as |row|}}
+                {{#> row row=row type="talent" editable=@root.spheres.editable }}{{/row}}
                 {{/each}}
-            </ul>
-        </div>
+            </ol>
+        </section>
         {{/if}}
         {{else}}
         <p class="hint">{{ localize "DND5E-SPHERES.NoSpheres" }}</p>
         {{/if}}
+        <p class="hint sp-help">{{ localize "DND5E-SPHERES.ContextHint" }}</p>
     </div>
 
 {{/with}}

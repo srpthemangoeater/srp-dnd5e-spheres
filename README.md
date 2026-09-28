@@ -133,8 +133,23 @@ a summary of the tradition.
   with its talents and a Cast button per ability. Spell points and sphere DC also show under the class
   line in the header.
 - **Tidy 5e Sheets:** the same *Spheres* tab.
-- In edit mode (or with the Tidy sheet unlocked) every sphere, talent, drawback and boon gets edit and
-  delete controls, and they can be dragged to reorder within their list.
+- Drawbacks, boons and each sphere's talents are collapsible lists: click a row to show its
+  description, click a group header to fold it. Open and closed state is remembered per user.
+- Right-click any row for its menu: *Post to chat*, *View*, and in edit mode (or with the Tidy sheet
+  unlocked) *Edit* and *Remove*. Spheres also offer *Cast* and *Choose free talents*; the tradition
+  offers *Post to chat* and *Edit tradition*.
+- In edit mode rows can be dragged to reorder within their list.
+
+### Free talents when first gaining a sphere
+Adding a sphere to a character opens a picker for the talents it grants on first acquisition (for
+example Destruction: one blast type, which need not match a sphere you have, and one blast shape).
+Chosen talents are marked *Free pick* and do not cost magic talents. Skip it with *Choose later* and
+pick them from the sphere's right-click menu or its *Free talents to choose* button.
+
+Spheres with free picks: Alteration (genotype), Conjuration (base companion), Death (undead),
+Destruction (blast type + blast shape), Divination (divine + sense), Enhancement (enhancement),
+Fate (consecration, motif or word), Mind (charm), Nature (package), Time (alter time),
+Universal (package) and Weather (mantle or shroud).
 
 ## API
 

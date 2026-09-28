@@ -1,57 +1,96 @@
+import { categoryLabel } from "../src/categories.mjs";
 import { MODULE_ID, TEMPLATES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { SpheresBrowser } from "./browser.mjs";
 import { CastDialog } from "./cast.mjs";
 import { postItemToChat, postTraditionCard } from "./chat.mjs";
+import { FreePicksDialog, hasRemainingPicks } from "./free-picks.mjs";
 import { computeSpheres, computeTalents, drawbackWeight, isFeatureType, itemFlags, spellPointState } from "./spell-points.mjs";
 import { ensureSpellPointsItem } from "./tradition.mjs";
 import { TraditionBuilder } from "./tradition-builder.mjs";
 
 const MAX_PIPS = 40;
 
-const itemEntry = item => ({
-  id: item.id, uuid: item.uuid, name: item.name, img: item.img,
-  weight: isFeatureType(item, "drawback") ? drawbackWeight(item) : null,
-  count: itemFlags(item).count ?? 1,
-  automated: !!itemFlags(item).automated
-});
+/* -------------------------------------------- */
+/*  Collapsed / expanded state                  */
+/* -------------------------------------------- */
+
+/** Accordion state is stored per user, keyed by actor and row. Groups default to open, rows to closed. */
+const uiState = () => game.user.getFlag(MODULE_ID, "accordion") ?? {};
+const stateKey = (actor, key) => `${actor.id}_${key}`.replace(/\./g, "_");
+const isOpen = (actor, key, fallback) => uiState()[stateKey(actor, key)] ?? fallback;
+
+const saveState = foundry.utils.debounce(changes => game.user.setFlag(MODULE_ID, "accordion", changes), 400);
+let pending = null;
+function rememberState(actor, key, open) {
+  pending = { ...(pending ?? uiState()), [stateKey(actor, key)]: open };
+  saveState(pending);
+}
+
+/* -------------------------------------------- */
+/*  Context                                     */
+/* -------------------------------------------- */
+
+/** All paragraphs of a description except the wiki link line. */
+function fullText(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html ?? "";
+  return [...div.querySelectorAll("p, li")].map(p => p.textContent.trim())
+    .filter(t => t && !t.startsWith("Full rules:"));
+}
 
 const bySort = (a, b) => (a.sort - b.sort) || a.name.localeCompare(b.name);
 
 /**
  * Data shared by the default sheet and Tidy templates.
  * @param {Actor5e} actor
- * @param {boolean} editable  Whether the sheet is in edit mode (shows edit, delete and reorder controls).
+ * @param {boolean} editable  Whether the sheet is in edit mode (enables edit, remove and reorder).
  */
 export function buildSpheresContext(actor, editable) {
   const data = computeSpheres(actor);
   const pool = spellPointState(actor);
-  const byType = type => actor.items.filter(i => isFeatureType(i, type))
-    .sort((a, b) => a.sort - b.sort).map(itemEntry);
-  const tradition = actor.items.find(i => isFeatureType(i, "castingTradition"));
-  const pips = pool.max <= MAX_PIPS
-    ? Array.fromRange(pool.max).map(n => ({ spent: n >= pool.value })) : [];
-
-  // Spheres with their abilities and the talents that belong to them.
   const talentData = computeTalents(actor);
-  const talentItems = actor.items.filter(i => isFeatureType(i, "talent"));
+  const tradition = actor.items.find(i => isFeatureType(i, "castingTradition"));
+  const pips = pool.max <= MAX_PIPS ? Array.fromRange(pool.max).map(n => ({ spent: n >= pool.value })) : [];
   const sphereOf = item => itemFlags(item).sphere ?? item.system.type?.subtype ?? item.system.identifier;
+
+  const entry = item => {
+    const f = itemFlags(item);
+    return {
+      id: item.id, name: item.name, img: item.img, key: `item.${item.id}`,
+      open: isOpen(actor, `item.${item.id}`, false),
+      description: fullText(item.system.description?.value),
+      count: f.count ?? 1,
+      weight: isFeatureType(item, "drawback") ? drawbackWeight(item) : null,
+      automated: !!f.automated
+    };
+  };
   const talentEntry = t => ({
-    ...itemEntry(t), advanced: !!itemFlags(t).advanced, free: talentData.isFree(t),
-    category: itemFlags(t).category, cost: itemFlags(t).cost
+    ...entry(t),
+    advanced: !!itemFlags(t).advanced,
+    freePick: !!itemFlags(t).freePick,
+    free: talentData.isFree(t),
+    category: categoryLabel(itemFlags(t).category),
+    cost: itemFlags(t).cost
   });
-  const sphereList = actor.items.filter(i => isFeatureType(i, "sphere")).sort(bySort)
-    .map(sphere => {
-      const key = sphereOf(sphere);
-      const abilities = Object.entries(itemFlags(sphere).abilities ?? {}).filter(([, m]) => !m.hidden)
-        .map(([activityId, m]) => ({ activityId, name: m.name, cost: m.cost }));
-      return {
-        ...itemEntry(sphere), key, abilities,
-        talents: talentItems.filter(t => sphereOf(t) === key).sort(bySort).map(talentEntry)
-      };
-    });
+  const byType = type => actor.items.filter(i => isFeatureType(i, type)).sort(bySort).map(entry);
+
+  const talentItems = actor.items.filter(i => isFeatureType(i, "talent"));
+  const sphereList = actor.items.filter(i => isFeatureType(i, "sphere")).sort(bySort).map(sphere => {
+    const key = sphereOf(sphere);
+    const abilities = Object.entries(itemFlags(sphere).abilities ?? {}).filter(([, m]) => !m.hidden)
+      .map(([activityId, m]) => ({ activityId, name: m.name, cost: m.cost }));
+    return {
+      ...entry(sphere), key, abilities,
+      groupKey: `sphere.${sphere.id}`, groupOpen: isOpen(actor, `sphere.${sphere.id}`, true),
+      picksLeft: actor.isOwner && hasRemainingPicks(sphere),
+      talents: talentItems.filter(t => sphereOf(t) === key).sort(bySort).map(talentEntry)
+    };
+  });
   const ownedKeys = new Set(sphereList.map(s => s.key));
   const orphanTalents = talentItems.filter(t => !ownedKeys.has(sphereOf(t))).map(talentEntry);
+  const drawbacks = byType("drawback");
+  const boons = byType("boon");
 
   return {
     ...data,
@@ -61,9 +100,11 @@ export function buildSpheresContext(actor, editable) {
     pool: { exists: !!pool.item, id: pool.item?.id, value: pool.value, max: pool.max, spent: pool.spent,
       pct: pool.max ? Math.round((pool.value / pool.max) * 100) : 0 },
     pips,
-    tradition: tradition ? itemEntry(tradition) : null,
-    drawbacks: byType("drawback"),
-    boons: byType("boon"),
+    tradition: tradition ? entry(tradition) : null,
+    groups: {
+      drawbacks: { key: "group.drawbacks", open: isOpen(actor, "group.drawbacks", true), items: drawbacks },
+      boons: { key: "group.boons", open: isOpen(actor, "group.boons", true), items: boons }
+    },
     sphereList,
     orphanTalents,
     talentTracker: talentData,
@@ -81,7 +122,7 @@ async function adjustPool(actor, delta) {
   await item.update({ "system.uses.spent": Math.clamp(spent + delta, 0, max) });
 }
 
-async function deleteItem(item) {
+async function removeItem(item) {
   const confirmed = await foundry.applications.api.DialogV2.confirm({
     window: { title: game.i18n.format("DND5E-SPHERES.DeleteTitle", { name: item.name }) },
     content: `<p>${game.i18n.format("DND5E-SPHERES.DeleteConfirm", { name: foundry.utils.escapeHTML(item.name) })}</p>`
@@ -89,7 +130,68 @@ async function deleteItem(item) {
   if ( confirmed ) await item.delete();
 }
 
-/** Drag-and-drop reordering of items inside one list of the Spheres tab. */
+/** Cast one of a sphere's abilities, asking which when it has several. */
+async function castFromSphere(sphere) {
+  const abilities = Object.entries(itemFlags(sphere).abilities ?? {}).filter(([, m]) => !m.hidden);
+  const open = id => {
+    const activity = sphere.system.activities.get(id);
+    if ( activity ) new CastDialog(activity).render({ force: true });
+  };
+  if ( abilities.length === 1 ) return open(abilities[0][0]);
+  if ( !abilities.length ) return;
+  await foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.format("DND5E-SPHERES.Context.CastTitle", { sphere: sphere.name }) },
+    content: `<p>${game.i18n.localize("DND5E-SPHERES.Context.CastWhich")}</p>`,
+    buttons: abilities.map(([id, m], i) => ({ action: id, label: m.name, default: i === 0, callback: () => open(id) })),
+    rejectClose: false
+  });
+}
+
+/** Right-click menu on rows of the Spheres tab. */
+function activateContextMenu(actor, element) {
+  if ( element.dataset.spheresMenu ) return;
+  element.dataset.spheresMenu = "true";
+  const itemOf = target => actor.items.get(target.dataset.spheresItemId);
+  const editing = () => element.querySelector(".dnd5e-spheres-content")?.classList.contains("editing") ?? false;
+  const isSphere = target => target.dataset.contextType === "sphere";
+  const isTradition = target => target.dataset.contextType === "tradition";
+  new foundry.applications.ux.ContextMenu(element, "[data-spheres-context]", [
+    { label: "DND5E-SPHERES.Context.Cast", icon: "fa-solid fa-wand-magic-sparkles",
+      visible: t => isSphere(t) && actor.isOwner, onClick: (e, t) => castFromSphere(itemOf(t)) },
+    { label: "DND5E-SPHERES.Context.FreePicks", icon: "fa-solid fa-gift",
+      visible: t => isSphere(t) && actor.isOwner && hasRemainingPicks(itemOf(t)),
+      onClick: (e, t) => new FreePicksDialog(itemOf(t)).render({ force: true }) },
+    { label: "DND5E-SPHERES.PostToChat", icon: "fa-solid fa-comment",
+      onClick: (e, t) => isTradition(t) ? postTraditionCard(actor) : postItemToChat(itemOf(t)) },
+    { label: "DND5E-SPHERES.EditTradition", icon: "fa-solid fa-pen-ruler",
+      visible: t => isTradition(t) && actor.isOwner, onClick: () => new TraditionBuilder(actor).render({ force: true }) },
+    { label: "DND5E-SPHERES.Context.View", icon: "fa-solid fa-eye",
+      visible: t => !editing() && !!itemOf(t), onClick: (e, t) => itemOf(t)?.sheet.render({ force: true }) },
+    { label: "DND5E-SPHERES.EditItem", icon: "fa-solid fa-pen",
+      visible: t => editing() && actor.isOwner && !!itemOf(t), onClick: (e, t) => itemOf(t)?.sheet.render({ force: true }) },
+    { label: "DND5E-SPHERES.Context.Remove", icon: "fa-solid fa-trash",
+      visible: t => editing() && actor.isOwner && !!itemOf(t) && !isTradition(t), onClick: (e, t) => removeItem(itemOf(t)) }
+  ], { jQuery: false, fixed: true });
+}
+
+/** Expand and collapse accordion rows and groups. */
+function activateAccordion(actor, element) {
+  for ( const toggle of element.querySelectorAll("[data-spheres-toggle]") ) {
+    if ( toggle.dataset.toggleBound ) continue;
+    toggle.dataset.toggleBound = "true";
+    toggle.addEventListener("click", event => {
+      if ( event.target.closest("button, [data-spheres-action]") ) return;
+      event.preventDefault();
+      const node = toggle.closest("[data-collapse-key]");
+      const open = !node.classList.contains("open");
+      node.classList.toggle("open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+      rememberState(actor, node.dataset.collapseKey, open);
+    });
+  }
+}
+
+/** Drag-and-drop reordering of items inside one list of the Spheres tab (edit mode only). */
 function activateSorting(actor, element) {
   for ( const row of element.querySelectorAll("[data-sort-id]") ) {
     if ( row.dataset.sortBound ) continue;
@@ -126,10 +228,12 @@ function activateSorting(actor, element) {
   }
 }
 
-/** Wire up buttons inside a rendered Spheres tab or header box. */
+/** Wire up a rendered Spheres tab. */
 export function activateSpheresListeners(actor, element) {
   if ( !element ) return;
   activateSorting(actor, element);
+  activateAccordion(actor, element);
+  activateContextMenu(actor, element);
   for ( const el of element.querySelectorAll("[data-spheres-action]") ) {
     if ( el.dataset.spheresBound ) continue;
     el.dataset.spheresBound = "true";
@@ -143,17 +247,13 @@ export function activateSpheresListeners(actor, element) {
           const activity = item?.system.activities.get(activityId);
           return activity && new CastDialog(activity).render({ force: true });
         }
+        case "freePicks": return item && new FreePicksDialog(item).render({ force: true });
         case "browse": return new SpheresBrowser(actor).render({ force: true });
-        case "chat": return item && postItemToChat(item);
-        case "traditionChat": return postTraditionCard(actor);
-        case "edit": return item?.sheet.render({ force: true });
-        case "delete": return item && deleteItem(item);
         case "builder": return new TraditionBuilder(actor).render({ force: true });
         case "createPool": return ensureSpellPointsItem(actor);
         case "spend": return adjustPool(actor, 1);
         case "restore": return adjustPool(actor, -1);
         case "usePool": return spellPointState(actor).item?.use({ legacy: false });
-        case "openItem": return item?.sheet.render({ force: true });
       }
     });
   }

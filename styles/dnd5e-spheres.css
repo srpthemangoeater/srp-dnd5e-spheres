@@ -445,3 +445,66 @@
 .spheres-browser .spheres-tag.free { background: rgb(14 117 114 / 25%); }
 .spheres-browser .add { width: 28px; flex: none; padding: 0; }
 .spheres-browser .browser-empty { padding: 12px; opacity: 0.7; text-align: center; }
+
+/* Accordion lists (0.4) */
+.dnd5e-spheres-content .sp-group { display: flex; flex-direction: column; }
+.dnd5e-spheres-content .sp-group-head,
+.dnd5e-spheres-content .sp-row-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.dnd5e-spheres-content .sp-group-head {
+  padding: 4px 2px;
+  font-weight: bold;
+  font-size: var(--font-size-12, 12px);
+  border-bottom: 1px solid rgb(128 128 128 / 25%);
+}
+.dnd5e-spheres-content .sp-chevron {
+  width: 10px;
+  font-size: var(--font-size-10, 10px);
+  opacity: 0.7;
+  transition: transform 120ms ease;
+}
+.dnd5e-spheres-content .open > .sp-group-head > .sp-chevron,
+.dnd5e-spheres-content .open > .sp-row-head > .sp-chevron { transform: rotate(90deg); }
+.dnd5e-spheres-content .sp-count {
+  font-size: var(--font-size-10, 10px);
+  font-weight: normal;
+  opacity: 0.7;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: rgb(128 128 128 / 18%);
+}
+.dnd5e-spheres-content .sp-list { list-style: none; margin: 0; padding: 0 0 0 12px; display: none; }
+.dnd5e-spheres-content .sp-group.open > .sp-list { display: block; }
+.dnd5e-spheres-content .sp-row { border-bottom: 1px solid rgb(128 128 128 / 12%); }
+.dnd5e-spheres-content .sp-row-head { padding: 3px 2px; }
+.dnd5e-spheres-content .sp-row-head:hover,
+.dnd5e-spheres-content .sp-group-head:hover { background: rgb(128 128 128 / 10%); }
+.dnd5e-spheres-content .sp-row-head img,
+.dnd5e-spheres-content .sphere-head img { width: 20px; height: 20px; border: none; flex: none; }
+.dnd5e-spheres-content .sp-row-name { flex: 1; }
+.dnd5e-spheres-content .sp-badges { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.dnd5e-spheres-content .sp-row-body { display: none; padding: 2px 8px 6px 28px; font-size: var(--font-size-12, 12px); opacity: 0.9; }
+.dnd5e-spheres-content .sp-row-body p { margin: 2px 0; }
+.dnd5e-spheres-content .sp-row.open > .sp-row-body { display: block; }
+.dnd5e-spheres-content .sphere-head .sphere-name { flex: 1; }
+.dnd5e-spheres-content .sphere-head .sphere-abilities { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; font-weight: normal; }
+.dnd5e-spheres-content .sphere-entry { border-top: none; padding-top: 0; }
+.dnd5e-spheres-content .spheres-tag.category { background: rgb(128 128 128 / 18%); color: inherit; }
+.dnd5e-spheres-content .spheres-tag.auto { background: rgb(14 117 114 / 18%); color: #0e7572; }
+.dnd5e-spheres-content .spheres-tag.cost { background: var(--spheres-sp-soft); }
+.dnd5e-spheres-content .spheres-tag.picks { cursor: pointer; border: none; width: auto; line-height: 1.6; }
+.dnd5e-spheres-content .sp-empty { padding: 2px 0; }
+.dnd5e-spheres-content .sp-help { font-size: var(--font-size-11, 11px); margin-top: 4px; }
+.dnd5e-spheres-content .tradition-name { font-size: var(--font-size-18, 18px); font-weight: bold; }
+
+/* Free picks dialog */
+.free-picks .free-picks-root { display: flex; flex-direction: column; gap: 8px; }
+.free-picks fieldset { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.free-picks .hint { margin: 0; opacity: 0.75; font-size: var(--font-size-12, 12px); }
+.free-picks .free-picks-footer { display: flex; justify-content: flex-end; gap: 8px; }
+.free-picks .free-picks-footer button { flex: none; width: auto; padding: 0 16px; }

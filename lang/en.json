@@ -24,6 +24,31 @@
     "PostToChat": "Post to chat",
     "EditItem": "Edit",
     "DeleteItem": "Delete",
+    "NoDescription": "No description.",
+    "NoTalentsYet": "No talents for this sphere yet.",
+    "ContextHint": "Right-click a row for more options. Click a row to show its description.",
+    "Group": {
+      "drawbacks": "Drawbacks",
+      "boons": "Boons"
+    },
+    "Context": {
+      "Cast": "Cast",
+      "CastTitle": "Cast {sphere}",
+      "CastWhich": "Which ability?",
+      "FreePicks": "Choose free talents",
+      "View": "View",
+      "Remove": "Remove"
+    },
+    "FreePicks": {
+      "Title": "Free talents: {sphere}",
+      "Intro": "When you first gain the {sphere} sphere you choose these talents for free. They do not cost magic talents.",
+      "Choose": "Choose a talent",
+      "Add": "Add talents",
+      "Later": "Choose later",
+      "None": "No free talents left to choose.",
+      "Pending": "Free talents to choose",
+      "Badge": "Free pick"
+    },
     "DeleteTitle": "Delete {name}",
     "DeleteConfirm": "Delete <strong>{name}</strong> from this character?",
     "Browser": {
