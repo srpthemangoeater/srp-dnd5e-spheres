@@ -45,13 +45,22 @@ function onPostUseActivity(activity, usageConfig, results) {
   runDrawbacks(activity.actor, { spent: sp.spent, activity, message: results.message });
 }
 
-/** Show spell points spent and remaining on the usage chat card. */
+/** Show spell points spent and remaining, and any cast choices, on the usage chat card. */
 function onRenderChatMessage(message, html) {
-  const sp = message.flags?.[MODULE_ID]?.sp;
-  if ( !sp || html.querySelector(".dnd5e-spheres-sp")) return;
+  const { sp, cast } = message.flags?.[MODULE_ID] ?? {};
+  if ( (!sp && !cast) || html.querySelector(".dnd5e-spheres-sp")) return;
   const badge = document.createElement("div");
   badge.classList.add("dnd5e-spheres-sp");
-  badge.innerHTML = `<i class="fas fa-atom" inert></i> ${game.i18n.format("DND5E-SPHERES.Chat.Spent", sp)}`;
+  const escape = foundry.utils.escapeHTML;
+  const lines = [];
+  if ( sp ) lines.push(`<div><i class="fas fa-atom" inert></i> ${game.i18n.format("DND5E-SPHERES.Chat.Spent", sp)}</div>`);
+  if ( cast?.talents?.length ) {
+    lines.push(`<div class="choices"><strong>${game.i18n.localize("DND5E-SPHERES.Chat.Talents")}:</strong> ${cast.talents.map(escape).join(", ")}</div>`);
+  }
+  if ( cast?.augments?.length ) {
+    lines.push(`<div class="choices"><strong>${game.i18n.localize("DND5E-SPHERES.Chat.Augments")}:</strong> ${cast.augments.map(escape).join(", ")}</div>`);
+  }
+  badge.innerHTML = lines.join("");
   const anchor = html.querySelector(".card-header") ?? html.querySelector(".chat-card") ?? html.querySelector(".message-content");
   if ( anchor?.classList.contains("card-header") ) anchor.after(badge);
   else anchor?.prepend(badge);

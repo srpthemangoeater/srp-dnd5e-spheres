@@ -83,18 +83,56 @@
         {{/if}}
     </div>
 
-    {{!-- Spheres & talents (filled in by later phases) --}}
+    {{!-- Spheres & talents --}}
     <div class="spheres-card list">
-        <div class="spheres-card-header"><h3>{{ localize "DND5E-SPHERES.SpheresAndTalents" }}</h3></div>
-        {{#if (or spheres.length talents.length)}}
-        <ul class="spheres-items">
-            {{#each spheres}}
-            <li><a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a></li>
-            {{/each}}
-            {{#each talents}}
-            <li class="talent"><a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a></li>
-            {{/each}}
-        </ul>
+        <div class="spheres-card-header">
+            <h3>{{ localize "DND5E-SPHERES.SpheresAndTalents" }}</h3>
+            <span class="spheres-tag talents {{#if talentTracker.over}}over{{/if}}"
+                  data-tooltip="{{ localize 'DND5E-SPHERES.TalentsHint' classes=talentTracker.fromClasses tradition=talentTracker.tradition bonus=talentTracker.bonus }}">
+                {{ localize "DND5E-SPHERES.TalentsUsed" spent=talentTracker.spent total=talentTracker.total }}
+            </span>
+        </div>
+        {{#if talentTracker.over}}
+        <p class="warning">{{ localize "DND5E-SPHERES.TalentsOver" }}</p>
+        {{/if}}
+        {{#if hasSpheres}}
+        {{#each sphereList}}
+        <div class="sphere-entry">
+            <div class="sphere-head">
+                <a class="sphere-name" data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
+                <span class="sphere-abilities">
+                    {{#each abilities}}
+                    <button type="button" class="spheres-button" data-spheres-action="cast" data-item-id="{{ ../id }}"
+                            data-activity-id="{{ activityId }}" {{#unless @root.spheres.owner}}disabled{{/unless}}>
+                        <i class="fas fa-wand-magic-sparkles" inert></i> {{ name }}{{#if cost}} ({{ cost }}){{/if}}
+                    </button>
+                    {{/each}}
+                </span>
+            </div>
+            {{#if talents.length}}
+            <ul class="spheres-items">
+                {{#each talents}}
+                <li class="talent">
+                    <a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
+                    {{#if advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
+                    {{#if free}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Free" }}</span>{{/if}}
+                    {{#if cost}}<span class="spheres-tag">{{ cost }} SP</span>{{/if}}
+                </li>
+                {{/each}}
+            </ul>
+            {{/if}}
+        </div>
+        {{/each}}
+        {{#if orphanTalents.length}}
+        <div class="sphere-entry orphan">
+            <div class="sphere-head"><span class="sphere-name">{{ localize "DND5E-SPHERES.OrphanTalents" }}</span></div>
+            <ul class="spheres-items">
+                {{#each orphanTalents}}
+                <li class="talent"><a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a></li>
+                {{/each}}
+            </ul>
+        </div>
+        {{/if}}
         {{else}}
         <p class="hint">{{ localize "DND5E-SPHERES.NoSpheres" }}</p>
         {{/if}}

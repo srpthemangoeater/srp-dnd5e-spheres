@@ -44,6 +44,7 @@ export async function ensureSpellPointsItem(actor) {
  * @property {Set<string>} boons      Boon UUIDs.
  * @property {number} classSP         Manual class spell points (non-spherecaster classes).
  * @property {number} spBonus         Manual spell point bonus.
+ * @property {number} talentBonus     Manual bonus magic talents.
  * @property {boolean} setSpellcasting  Also use the key ability as the actor's spellcasting ability.
  */
 
@@ -66,6 +67,7 @@ export function readTradition(actor) {
     boons,
     classSP: Number(flags.classSP) || 0,
     spBonus: Number(flags.spBonus) || 0,
+    talentBonus: Number(flags.talentBonus) || 0,
     setSpellcasting: !!flags.setSpellcasting
   };
 }
@@ -103,6 +105,7 @@ export async function applyTradition(actor, state) {
       kam: state.kam || null,
       classSP: Number(state.classSP) || 0,
       spBonus: Number(state.spBonus) || 0,
+      talentBonus: Number(state.talentBonus) || 0,
       setSpellcasting: !!state.setSpellcasting,
       tradition: { name: tradition.name, preset: state.preset || null }
     }

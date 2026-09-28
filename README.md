@@ -1,15 +1,29 @@
 # dnd5e Spheres
 
-A Foundry VTT module that adds casting traditions, drawbacks, boons and spell points to the
-[dnd5e](https://github.com/foundryvtt/dnd5e) system. Compatible with the Spheres 5E rules
-([spheres5e.wikidot.com](https://spheres5e.wikidot.com/)).
+A Foundry VTT module that adds spherecasting to the [dnd5e](https://github.com/foundryvtt/dnd5e) system:
+casting traditions, spell points, spherecaster classes, the magic spheres and their talents.
+Compatible with the Spheres 5E rules ([spheres5e.wikidot.com](https://spheres5e.wikidot.com/)).
 
 - Foundry VTT: v14
 - dnd5e: 6.0.x
 - Optional: [Tidy 5e Sheets](https://github.com/kgar/foundry-vtt-tidy-5e-sheets), [libWrapper](https://github.com/ruipin/fvtt-lib-wrapper)
 
-This is phase 1 of the project: casting traditions and spell points. Spherecaster classes,
-magic talents and the individual spheres come in later phases.
+## Compendiums
+
+| Compendium | Contents |
+|---|---|
+| Spheres: Core Features | The Spell Points pool item |
+| Spheres: Casting Traditions | 38 sample traditions and subtraditions |
+| Spheres: Drawbacks | 24 drawbacks |
+| Spheres: Boons | 14 boons |
+| Spheres: Spherecaster Classes | Incanter, Elementalist, Mageknight, Prodigy, Soul Weaver |
+| Spheres: Subclasses | 27 specializations, paths and callings |
+| Spheres: Class Features | 177 class and subclass features |
+| Spheres: Magic Spheres | 20 spheres with their base abilities as activities |
+| Spheres: Sphere Talents | 801 basic and advanced talents, grouped by sphere |
+
+Entries summarise the mechanics and link to the full rules on the Spheres 5E wiki. Sphere variants
+are not included.
 
 ## Features
 
@@ -68,10 +82,37 @@ When spell points are spent:
 
 Each of these can be turned off in the module settings.
 
+### Spherecaster classes
+- Each class has Hit Points, proficiency and ASI advancements, class features granted by level, a
+  subclass at the right level, and scale values for `spell-points` and `magic-talents` (plus Favored
+  Element dice, Max Sequence or Soul Nexus where the class has them).
+- Drop a class on a character to level it normally with the dnd5e advancement flow.
+
+### Magic talents
+- Total = `magic-talents` from spherecaster classes + 2 from a casting tradition + a manual bonus
+  (set in the tradition builder).
+- Each sphere and each talent costs one. Blast types granted for free by a sphere you have (for example
+  Fire with Nature) and items flagged `bonusTalent` do not count.
+- The Spheres tab shows *spent / total* and warns when you know too many.
+
+### Spheres and casting
+- Sphere items carry their base abilities as dnd5e activities: saves use `@spheres.dc`, attacks use
+  `@spheres.attack`, and damage or healing come from the cast.
+- Using a sphere ability opens the **cast dialog**: pick talents (blast type, blast shape, charm,
+  genotype and so on) and augments, see the total spell point cost against your proficiency cap and
+  your pool, then cast. The cost is charged to the Spell Points item, so the cap, drawback automation
+  and chat card summary all apply.
+- Destructive Blast damage follows the rules (1d8 per tier, or 1d8 + 1d8 per 2 levels when
+  empowered) with the blast type's damage type; Ray and Tether switch to a spell attack.
+  Cure, Invigorate and telekinetic Projectile also compute their formulas from the chosen talents.
+- Metasphere talents from the Universal sphere (Quicken, Widen, Mass and others) appear as augments on
+  every sphere.
+
 ### Character sheets
 - **Default dnd5e sheet:** a *Spheres* tab with the tradition, drawbacks, boons, the spell point
-  pool (pips, spend/restore buttons) and the per-effect cap, plus spell points and sphere DC under
-  the class line in the header.
+  pool (pips, spend/restore buttons), the per-effect cap, the magic talent tracker, and each sphere
+  with its talents and a Cast button per ability. Spell points and sphere DC also show under the class
+  line in the header.
 - **Tidy 5e Sheets:** the same *Spheres* tab.
 
 ## API
@@ -81,11 +122,13 @@ const api = game.modules.get("dnd5e-spheres").api;
 api.computeSpheres(actor);     // key ability, SP maximum breakdown, DC, cap
 api.spellPointState(actor);    // { item, value, max, spent }
 api.openBuilder(actor);        // open the tradition builder
+api.computeTalents(actor);     // { total, spent, over, ... }
+api.openCast(activity);        // open the cast dialog for a sphere ability
 ```
 
 ## Development
 
-Compendium packs are built from `src/data.mjs`:
+Compendium packs are built from `src/data.mjs`, `src/classes.mjs` and `src/spheres-*.mjs`:
 
 ```sh
 npm install

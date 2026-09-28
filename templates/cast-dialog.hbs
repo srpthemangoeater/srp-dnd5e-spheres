@@ -1,0 +1,74 @@
+<div class="cast-root">
+    <p class="cast-description">{{ description }}</p>
+    <div class="cast-stats">
+        <span>{{ localize "DND5E-SPHERES.SphereDC" }} <b>{{ dc }}</b></span>
+        <span>{{ localize "DND5E-SPHERES.Attack" }} <b>{{ dnd5e-formatModifier attack }}</b></span>
+        {{#if ability.cost}}<span>{{ localize "DND5E-SPHERES.Cast.BaseCost" cost=ability.cost }}</span>{{/if}}
+    </div>
+
+    {{#each groups}}
+    <fieldset>
+        <legend>{{ label }}</legend>
+        {{#if options.length}}
+        <ul class="cast-options">
+            {{#unless multi}}
+            <li>
+                <label class="check">
+                    <input type="radio" name="group.{{ key }}" value="" {{#if none}}checked{{/if}}>
+                    <span class="name">{{ localize "DND5E-SPHERES.Cast.None" }}</span>
+                </label>
+            </li>
+            {{/unless}}
+            {{#each options}}
+            <li data-tooltip="{{ summary }}" data-tooltip-direction="LEFT">
+                <label class="check">
+                    {{#if ../multi}}
+                    <input type="checkbox" name="multi.{{ ../key }}.{{ id }}" {{#if selected}}checked{{/if}}>
+                    {{else}}
+                    <input type="radio" name="group.{{ ../key }}" value="{{ id }}" {{#if selected}}checked{{/if}}>
+                    {{/if}}
+                    <span class="name">{{ name }}</span>
+                </label>
+                {{#if cost}}<span class="badge cost">{{ cost }} SP</span>{{/if}}
+            </li>
+            {{/each}}
+        </ul>
+        {{else}}
+        <p class="hint">{{ localize "DND5E-SPHERES.Cast.NoTalents" }}</p>
+        {{/if}}
+    </fieldset>
+    {{/each}}
+
+    {{#if augments.length}}
+    <fieldset>
+        <legend>{{ localize "DND5E-SPHERES.Cast.Augments" }}</legend>
+        <ul class="cast-options">
+            {{#each augments}}
+            <li {{#if summary}}data-tooltip="{{ summary }}" data-tooltip-direction="LEFT"{{/if}}>
+                <label class="check">
+                    <input type="checkbox" name="aug.{{ key }}" {{#if selected}}checked{{/if}}>
+                    <span class="name">{{ label }}</span>
+                </label>
+                <span class="badge cost">{{ cost }} SP</span>
+            </li>
+            {{/each}}
+        </ul>
+    </fieldset>
+    {{/if}}
+
+    <div class="cast-total {{#unless canCast}}invalid{{/unless}}">
+        <span class="total">{{ localize "DND5E-SPHERES.Cast.Total" total=total }}</span>
+        <span>{{ localize "DND5E-SPHERES.Cap" cap=cap }}</span>
+        {{#if pool.item}}<span>{{ localize "DND5E-SPHERES.Cast.Pool" value=pool.value max=pool.max }}</span>{{/if}}
+    </div>
+    {{#if overCap}}<p class="warning">{{ localize "DND5E-SPHERES.Cast.OverCap" }}</p>{{/if}}
+    {{#if overPool}}<p class="warning">{{ localize "DND5E-SPHERES.Cast.OverPool" }}</p>{{/if}}
+    {{#if noPool}}<p class="warning">{{ localize "DND5E-SPHERES.Cast.NoPool" }}</p>{{/if}}
+
+    <footer class="cast-footer">
+        <button type="button" data-action="cancel">{{ localize "Cancel" }}</button>
+        <button type="submit" class="primary" {{#unless canCast}}disabled{{/unless}}>
+            <i class="fas fa-wand-magic-sparkles" inert></i> {{ localize "DND5E-SPHERES.Cast.Cast" total=total }}
+        </button>
+    </footer>
+</div>

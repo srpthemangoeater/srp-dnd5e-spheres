@@ -20,7 +20,26 @@
     "NoPool": "This character has no Spell Points pool yet.",
     "CreatePool": "Add Spell Points",
     "SpheresAndTalents": "Spheres & Talents",
-    "NoSpheres": "No spheres or talents yet.",
+    "NoSpheres": "No spheres or talents yet. Drag them from the Magic Spheres and Sphere Talents compendiums.",
+    "TalentsUsed": "Magic talents {spent} / {total}",
+    "TalentsHint": "Classes {classes} + tradition {tradition} + bonus {bonus}. Each sphere and talent costs one talent; blast types granted by a sphere you have are free.",
+    "TalentsOver": "More spheres and talents are known than magic talents allow.",
+    "Advanced": "Advanced",
+    "Free": "Free",
+    "OrphanTalents": "Talents without their sphere",
+    "Cast": {
+      "BaseCost": "Base cost {cost} SP",
+      "None": "None",
+      "NoTalents": "No talents of this kind yet.",
+      "Augments": "Augments",
+      "Total": "Total {total} SP",
+      "Pool": "Pool {value} / {max}",
+      "Cast": "Cast ({total} SP)",
+      "OverCap": "This costs more spell points than your proficiency bonus allows for one effect.",
+      "OverPool": "You do not have enough spell points.",
+      "NoPool": "This character has no Spell Points pool.",
+      "CannotCast": "This sphere effect cannot be cast with the chosen options."
+    },
     "FeatureType": {
       "castingTradition": "Casting Tradition",
       "drawback": "Drawback",
@@ -46,11 +65,14 @@
       "ClassSP": "Class spell points (manual)",
       "FromClasses": "+{value} from spherecaster classes",
       "ManualBonus": "Other bonus",
+      "TalentBonus": "Bonus magic talents",
       "MaxSP": "Maximum spell points",
       "SetSpellcasting": "Also use the key ability as this character's spellcasting ability"
     },
     "Chat": {
-      "Spent": "Spent {spent} SP ({remaining} / {max} left)"
+      "Spent": "Spent {spent} SP ({remaining} / {max} left)",
+      "Talents": "Talents",
+      "Augments": "Augments"
     },
     "Drawback": {
       "Reminders": "Casting tradition drawbacks apply:",

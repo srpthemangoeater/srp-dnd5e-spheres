@@ -172,7 +172,7 @@ export class TraditionBuilder extends HandlebarsApplicationMixin(ApplicationV2) 
       if ( target.checked ) state.boons.add(uuid);
       else state.boons.delete(uuid);
     }
-    else if ( ["classSP", "spBonus"].includes(name) ) state[name] = Number(target.value) || 0;
+    else if ( ["classSP", "spBonus", "talentBonus"].includes(name) ) state[name] = Number(target.value) || 0;
     else if ( name === "setSpellcasting" ) state.setSpellcasting = target.checked;
     else if ( name in state ) state[name] = target.value;
     else return;

@@ -267,3 +267,71 @@
 }
 
 .tradition-builder .builder-footer button { flex: none; width: auto; padding: 0 16px; }
+
+/* Spheres list on the sheet */
+.dnd5e-spheres-content .sphere-entry {
+  border-top: 1px solid rgb(128 128 128 / 25%);
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dnd5e-spheres-content .sphere-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dnd5e-spheres-content .sphere-name { font-weight: bold; display: flex; align-items: center; gap: 6px; }
+.dnd5e-spheres-content .sphere-name img { width: 22px; height: 22px; border: none; }
+.dnd5e-spheres-content .sphere-abilities { display: flex; gap: 4px; flex-wrap: wrap; }
+.dnd5e-spheres-content .spheres-items .talent { display: flex; align-items: center; gap: 6px; }
+.dnd5e-spheres-content .spheres-tag.talents.over,
+.dnd5e-spheres-content .warning { color: #c04040; }
+.dnd5e-spheres-content .warning { margin: 0; }
+.dnd5e-spheres-content .spheres-tag.advanced { background: rgb(94 70 160 / 15%); color: var(--spheres-boon); }
+.dnd5e-spheres-content .spheres-tag.free { background: rgb(14 117 114 / 18%); color: #0e7572; }
+
+/* Cast dialog */
+.cast-dialog .window-content { display: flex; flex-direction: column; }
+.cast-dialog .cast-root { display: flex; flex-direction: column; gap: 8px; }
+.cast-dialog .cast-description { margin: 0; opacity: 0.85; }
+.cast-dialog .cast-stats { display: flex; gap: 12px; flex-wrap: wrap; font-size: var(--font-size-12, 12px); }
+.cast-dialog fieldset { margin: 0; }
+.cast-dialog .cast-options { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+.cast-dialog .cast-options li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 1px 4px;
+  border-bottom: 1px solid rgb(128 128 128 / 15%);
+}
+.cast-dialog .check { display: flex; align-items: center; gap: 4px; }
+.cast-dialog .badge.cost {
+  font-size: var(--font-size-10, 10px);
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgb(181 122 12 / 20%);
+  white-space: nowrap;
+}
+.cast-dialog .cast-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgb(128 128 128 / 12%);
+}
+.cast-dialog .cast-total .total { font-weight: bold; color: #b57a0c; }
+.cast-dialog .cast-total.invalid .total { color: #c04040; }
+.cast-dialog .warning { color: #c04040; margin: 0; }
+.cast-dialog .hint { margin: 0; opacity: 0.7; }
+.cast-dialog .cast-footer { display: flex; justify-content: flex-end; gap: 8px; }
+.cast-dialog .cast-footer button { flex: none; width: auto; padding: 0 16px; }
+.dnd5e-spheres-sp .choices { font-weight: normal; }
+.dnd5e-spheres-content .spheres-items a { display: inline-flex; align-items: center; gap: 6px; }
+.dnd5e-spheres-content .spheres-items img { flex: none; display: inline-block; }

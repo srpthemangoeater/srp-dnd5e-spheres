@@ -1,6 +1,7 @@
 import { MODULE_ID, TEMPLATES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
-import { computeSpheres, drawbackWeight, isFeatureType, itemFlags, spellPointState } from "./spell-points.mjs";
+import { CastDialog } from "./cast.mjs";
+import { computeSpheres, computeTalents, drawbackWeight, isFeatureType, itemFlags, spellPointState } from "./spell-points.mjs";
 import { ensureSpellPointsItem } from "./tradition.mjs";
 import { TraditionBuilder } from "./tradition-builder.mjs";
 
@@ -26,6 +27,28 @@ export function buildSpheresContext(actor, editable) {
   const tradition = actor.items.find(i => isFeatureType(i, "castingTradition"));
   const pips = pool.max <= MAX_PIPS
     ? Array.fromRange(pool.max).map(n => ({ spent: n >= pool.value })) : [];
+
+  // Spheres with their abilities and the talents that belong to them.
+  const talentData = computeTalents(actor);
+  const talentItems = actor.items.filter(i => isFeatureType(i, "talent"));
+  const sphereOf = item => itemFlags(item).sphere ?? item.system.type?.subtype ?? item.system.identifier;
+  const talentEntry = t => ({
+    ...itemEntry(t), advanced: !!itemFlags(t).advanced, free: talentData.isFree(t),
+    category: itemFlags(t).category, cost: itemFlags(t).cost
+  });
+  const sphereList = actor.items.filter(i => isFeatureType(i, "sphere")).sort((a, b) => a.name.localeCompare(b.name))
+    .map(sphere => {
+      const key = sphereOf(sphere);
+      const abilities = Object.entries(itemFlags(sphere).abilities ?? {}).filter(([, m]) => !m.hidden)
+        .map(([activityId, m]) => ({ activityId, name: m.name, cost: m.cost }));
+      return {
+        ...itemEntry(sphere), key, abilities,
+        talents: talentItems.filter(t => sphereOf(t) === key).sort((a, b) => a.name.localeCompare(b.name)).map(talentEntry)
+      };
+    });
+  const ownedKeys = new Set(sphereList.map(s => s.key));
+  const orphanTalents = talentItems.filter(t => !ownedKeys.has(sphereOf(t))).map(talentEntry);
+
   return {
     ...data,
     editable,
@@ -37,8 +60,10 @@ export function buildSpheresContext(actor, editable) {
     tradition: tradition ? itemEntry(tradition) : null,
     drawbacks: byType("drawback"),
     boons: byType("boon"),
-    spheres: byType("sphere"),
-    talents: byType("talent")
+    sphereList,
+    orphanTalents,
+    talentTracker: talentData,
+    hasSpheres: sphereList.length > 0 || orphanTalents.length > 0
   };
 }
 
@@ -61,8 +86,12 @@ export function activateSpheresListeners(actor, element) {
     el.addEventListener("click", async event => {
       event.preventDefault();
       event.stopPropagation();
-      const { spheresAction, itemId } = el.dataset;
+      const { spheresAction, itemId, activityId } = el.dataset;
       switch ( spheresAction ) {
+        case "cast": {
+          const activity = actor.items.get(itemId)?.system.activities.get(activityId);
+          return activity && new CastDialog(activity).render({ force: true });
+        }
         case "builder": return new TraditionBuilder(actor).render({ force: true });
         case "createPool": return ensureSpellPointsItem(actor);
         case "spend": return adjustPool(actor, 1);

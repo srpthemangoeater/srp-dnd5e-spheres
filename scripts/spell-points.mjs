@@ -1,4 +1,4 @@
-import { MODULE_ID, SP_SCALE_ID } from "./constants.mjs";
+import { MODULE_ID, SP_SCALE_ID, TALENT_SCALE_ID, TRADITION_TALENTS } from "./constants.mjs";
 
 /**
  * Bonus spell points granted by drawbacks that were not traded for boons.
@@ -88,17 +88,62 @@ export function spellPointState(actor) {
   return { item, max, spent, value: Math.max(0, max - spent) };
 }
 
+/**
+ * Magic talents available and spent. Spheres and talents cost one talent each, except blast types that are
+ * free for a sphere the actor has and items flagged as bonus talents.
+ */
+export function computeTalents(actor) {
+  const flags = actor.flags?.[MODULE_ID] ?? {};
+  let fromClasses = 0;
+  for ( const cls of Object.values(actor.classes ?? {}) ) {
+    if ( !cls.advancement?.byType ) continue;
+    const value = Number(cls.scaleValues?.[TALENT_SCALE_ID]?.value);
+    if ( Number.isFinite(value) ) fromClasses += value;
+  }
+  const tradition = actor.items.some(i => isFeatureType(i, "castingTradition")) ? TRADITION_TALENTS : 0;
+  const bonus = Number(flags.talentBonus) || 0;
+  const spheres = actor.items.filter(i => isFeatureType(i, "sphere"));
+  const owned = new Set(spheres.map(i => itemFlags(i).sphere ?? i.system.identifier));
+  const isFree = item => {
+    const { free, bonusTalent } = itemFlags(item);
+    if ( bonusTalent ) return true;
+    return !!free && owned.has(free.toLowerCase());
+  };
+  const paid = [...spheres, ...actor.items.filter(i => isFeatureType(i, "talent"))].filter(i => !isFree(i));
+  const total = fromClasses + tradition + bonus;
+  return { fromClasses, tradition, bonus, total, spent: paid.length, over: paid.length > total, isFree };
+}
+
+/** Number of damage or healing dice at 1st, 5th, 11th and 17th level. */
+export const tierDice = level => level >= 17 ? 4 : level >= 11 ? 3 : level >= 5 ? 2 : 1;
+
+/** Default formulas for sphere abilities, used when no cast dialog choice overrides them. */
+function defaultEffects(actor, data) {
+  const level = data.level;
+  const tier = tierDice(level);
+  const projectile = level >= 17 ? "2d8" : level >= 11 ? "2d6" : level >= 5 ? "1d8" : "1d6";
+  return {
+    blast: `${tier}d8`,
+    cure: `${tier}d8 + ${data.kamMod}`,
+    invigorate: `${data.prof}`,
+    projectile
+  };
+}
+
 /** Add `@spheres` to actor roll data. */
 function addRollData(actor, rollData) {
   try {
     const data = computeSpheres(actor);
+    const cast = actor.flags?.[MODULE_ID]?.cast ?? {};
     const spheres = {
       kam: data.kamMod,
       kamAbility: data.kam ?? "",
       dc: data.dc,
       attack: data.attack,
       cap: data.cap,
-      sp: { max: data.max, bonus: data.traditionBonus, class: data.classSP }
+      sp: { max: data.max, bonus: data.traditionBonus, class: data.classSP },
+      // Formulas chosen in the cast dialog take priority over the level-based defaults.
+      fx: { ...defaultEffects(actor, data), ...cast }
     };
     // Value is read lazily so evaluating the pool's own max formula never recurses into it.
     Object.defineProperty(spheres.sp, "value", {
