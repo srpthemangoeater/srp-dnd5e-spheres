@@ -127,6 +127,12 @@
     "Chat": {
       "Spent": "Spent {spent} SP ({remaining} / {max} left)",
       "Spent0": "No spell points spent",
+      "SpentShort": "−{spent} SP ({remaining}/{max})",
+      "Spent0Short": "0 SP",
+      "PlannedShort": "Would cost {total} SP",
+      "ToResolve": "{count} to resolve",
+      "AllResolved": "all resolved",
+      "HasEffects": "Drawbacks whose Resolve applies an effect (damage, save, gold or surge roll)",
       "Planned": "Would cost {total} SP (not cast)",
       "Through": "Casting through {tradition}",
       "Talents": "Talents",

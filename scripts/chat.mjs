@@ -37,46 +37,71 @@ export function cardFlags(actor, cast=null) {
 /*  Rendering                                   */
 /* -------------------------------------------- */
 
-function renderCard(flags, { canResolve }) {
+/** Sections the user opened on each message, kept across re-renders (e.g. after resolving a drawback). */
+const OPEN_SECTIONS = new Map();
+
+/** A collapsible section: the summary line stays visible, the body opens on click. */
+const section = (key, summary, body, { open=false, classes="" }={}) =>
+  `<details class="sc-block ${classes}" data-section="${key}" ${open ? "open" : ""}>`
+  + `<summary><i class="fas fa-chevron-right sc-chevron" inert></i>${summary}</summary>`
+  + `<div class="sc-body">${body}</div></details>`;
+
+/** One talent or augment: name and badges, with its text in a nested collapsible. */
+const detailItem = (name, meta, cost, text) => {
+  const head = `<strong>${escape(name)}</strong>${meta ? ` <span class="sc-meta">${escape(meta)}</span>` : ""}`
+    + `${cost ? ` <span class="sc-cost">${cost} SP</span>` : ""}`;
+  return text ? `<details class="sc-item"><summary>${head}</summary><div class="sc-text">${escape(text)}</div></details>`
+    : `<div class="sc-item plain">${head}</div>`;
+};
+
+function renderCard(flags, { canResolve, openSections }) {
   const { tradition, cast, sp, drawbacks = [], resolved = {}, preview } = flags;
   const parts = [];
+  const wasOpen = (key, fallback) => openSections?.has(key) ? openSections.get(key) : fallback;
 
-  // 1. Casting tradition announcement.
-  if ( tradition?.name ) {
-    parts.push(`<div class="sc-tradition"><i class="fas fa-atom" inert></i> ${format("DND5E-SPHERES.Chat.Through", {
-      tradition: `<strong>${escape(tradition.name)}</strong>`
-    })}${tradition.kam ? ` <span class="sc-meta">${escape(tradition.kam)} &middot; ${localize("DND5E-SPHERES.DC")} ${tradition.dc}</span>` : ""}</div>`);
+  // Summary line: tradition on the left, spell points on the right. Always visible.
+  const traditionText = tradition?.name ? `<i class="fas fa-atom" inert></i> ${escape(tradition.name)}`
+    + `${tradition.kam ? ` <span class="sc-meta">${escape(tradition.kam)} &middot; ${localize("DND5E-SPHERES.DC")} ${tradition.dc}</span>` : ""}` : "";
+  let spText = "";
+  if ( sp ) spText = format("DND5E-SPHERES.Chat.SpentShort", sp);
+  else if ( cast ) spText = format(preview ? "DND5E-SPHERES.Chat.PlannedShort" : "DND5E-SPHERES.Chat.Spent0Short", { total: cast.total ?? 0 });
+  if ( traditionText || spText ) {
+    parts.push(`<div class="sc-topline"><span class="sc-tradition">${traditionText}</span>${spText ? `<span class="sc-sp">${spText}</span>` : ""}</div>`);
   }
 
-  // 2. The sphere ability.
   if ( cast ) {
-    parts.push(`<div class="sc-ability"><div class="sc-title">${escape(cast.sphere ? `${cast.sphere}: ` : "")}<strong>${escape(cast.ability)}</strong>`
-      + `${cast.formula ? ` <span class="sc-meta">${escape(cast.formula)}${cast.damageType ? ` ${escape(CONFIG.DND5E.damageTypes[cast.damageType]?.label ?? cast.damageType)}` : ""}</span>` : ""}</div>`
-      + `${cast.summary ? `<div class="sc-text">${escape(cast.summary)}</div>` : ""}</div>`);
+    // The ability: one line with its result; its rules text folds away.
+    const damage = cast.formula ? ` <span class="sc-formula">${escape(cast.formula)}${cast.damageType
+      ? ` ${escape(CONFIG.DND5E.damageTypes[cast.damageType]?.label ?? cast.damageType)}` : ""}</span>` : "";
+    const title = `<span class="sc-title"><strong>${escape(cast.ability)}</strong>${damage}</span>`;
+    parts.push(cast.summary ? section("ability", title, `<div class="sc-text">${escape(cast.summary)}</div>`, { open: wasOpen("ability", false) })
+      : `<div class="sc-block static">${title}</div>`);
 
-    // 3. Talents and augments with their full descriptions.
-    const talents = (cast.details ?? []).map(t => `<li><strong>${escape(t.name)}</strong>`
-      + `${t.category ? ` <span class="sc-meta">${escape(t.category)}</span>` : ""}`
-      + `${t.cost ? ` <span class="sc-cost">${t.cost} SP</span>` : ""}`
-      + `${t.summary ? `<div class="sc-text">${escape(t.summary)}</div>` : ""}</li>`);
-    const augments = (cast.augmentDetails ?? []).map(a => `<li><strong>${escape(a.label)}</strong>`
-      + ` <span class="sc-cost">${a.cost} SP</span>${a.summary ? `<div class="sc-text">${escape(a.summary)}</div>` : ""}</li>`);
-    if ( talents.length ) parts.push(`<div class="sc-section"><h4>${localize("DND5E-SPHERES.Chat.Talents")}</h4><ul>${talents.join("")}</ul></div>`);
-    if ( augments.length ) parts.push(`<div class="sc-section"><h4>${localize("DND5E-SPHERES.Chat.Augments")}</h4><ul>${augments.join("")}</ul></div>`);
+    // Talents and augments: names in the summary, full text inside.
+    const talents = cast.details ?? [];
+    if ( talents.length ) {
+      parts.push(section("talents",
+        `${localize("DND5E-SPHERES.Chat.Talents")} <span class="sc-names">${talents.map(t => escape(t.name)).join(", ")}</span>`,
+        talents.map(t => detailItem(t.name, t.category, t.cost, t.summary)).join(""), { open: wasOpen("talents", false) }));
+    }
+    const augments = cast.augmentDetails ?? [];
+    if ( augments.length ) {
+      parts.push(section("augments",
+        `${localize("DND5E-SPHERES.Chat.Augments")} <span class="sc-names">${augments.map(a => escape(a.label)).join(", ")}</span>`,
+        augments.map(a => detailItem(a.label, "", a.cost, a.summary)).join(""), { open: wasOpen("augments", false) }));
+    }
   }
 
-  // Spell points.
-  if ( sp ) parts.push(`<div class="sc-sp"><i class="fas fa-atom" inert></i> ${format("DND5E-SPHERES.Chat.Spent", sp)}</div>`);
-  else if ( cast ) parts.push(`<div class="sc-sp">${format(preview ? "DND5E-SPHERES.Chat.Planned" : "DND5E-SPHERES.Chat.Spent0", { total: cast.total ?? 0 })}</div>`);
-
-  // 4. Drawbacks, one row each with Show and Resolve.
+  // Drawbacks: the summary counts what still needs resolving; rows inside with Show / Resolve.
   if ( drawbacks.length ) {
+    const pending = preview ? 0 : drawbacks.filter(d => !resolved[d.key]).length;
+    const pendingAutomated = preview ? 0 : drawbacks.filter(d => d.automated && !resolved[d.key]).length;
     const rows = drawbacks.map(d => {
       const result = resolved[d.key];
       const details = [d.summary, d.reminder].filter(_ => _).map(t => `<p>${escape(t)}</p>`).join("");
-      return `<div class="sc-drawback ${result ? "resolved" : ""}" data-key="${escape(d.key)}">
+      return `<div class="sc-drawback ${result ? "resolved" : ""} ${d.automated ? "automated" : ""}" data-key="${escape(d.key)}">
         <div class="sc-row">
-          <span class="sc-name">${result ? '<i class="fas fa-check" inert></i> ' : ""}${escape(d.name)}</span>
+          <span class="sc-name">${result ? '<i class="fas fa-check" inert></i> ' : d.automated ? '<i class="fas fa-bolt" inert></i> ' : ""}${escape(d.name)}</span>
           <button type="button" class="sc-button" data-sc-action="show">${localize("DND5E-SPHERES.Chat.Show")}</button>
           ${preview ? "" : `<button type="button" class="sc-button" data-sc-action="resolve" ${result || !canResolve ? "disabled" : ""}>
             ${localize(result ? "DND5E-SPHERES.Chat.Resolved" : "DND5E-SPHERES.Chat.Resolve")}</button>`}
@@ -84,7 +109,14 @@ function renderCard(flags, { canResolve }) {
         <div class="sc-details">${details}${result ? `<p class="sc-result">${escape(result)}</p>` : ""}</div>
       </div>`;
     });
-    parts.push(`<div class="sc-section sc-drawbacks"><h4>${localize("DND5E-SPHERES.Chat.Drawbacks")}</h4>${rows.join("")}</div>`);
+    const status = pending
+      ? `<span class="sc-pending">${format("DND5E-SPHERES.Chat.ToResolve", { count: pending })}</span>`
+      : preview ? "" : `<span class="sc-done"><i class="fas fa-check" inert></i> ${localize("DND5E-SPHERES.Chat.AllResolved")}</span>`;
+    // Closed by default; the summary says how many still need resolving (and flags ones with a real effect).
+    const effects = pendingAutomated ? ` <span class="sc-pending-auto" data-tooltip="${localize("DND5E-SPHERES.Chat.HasEffects")}">`
+      + `<i class="fas fa-bolt" inert></i> ${pendingAutomated}</span>` : "";
+    parts.push(section("drawbacks", `${localize("DND5E-SPHERES.Chat.Drawbacks")} <span class="sc-count">${drawbacks.length}</span>${effects} ${status}`,
+      rows.join(""), { open: wasOpen("drawbacks", false), classes: "sc-drawbacks" }));
   }
   return parts.join("");
 }
@@ -95,12 +127,25 @@ function onRenderChatMessage(message, html) {
   if ( !flags || (!flags.cast && !flags.sp && !flags.drawbacks) || html.querySelector(".dnd5e-spheres-card") ) return;
   const actor = flags.actorUuid ? fromUuidSync(flags.actorUuid) : ChatMessage.getSpeakerActor(message.speaker);
   const canResolve = !!actor?.isOwner && message.canUserModify(game.user, "update");
+  const openSections = OPEN_SECTIONS.get(message.id);
   const block = document.createElement("div");
   block.classList.add("dnd5e-spheres-card");
-  block.innerHTML = renderCard(flags, { canResolve });
+  block.innerHTML = renderCard(flags, { canResolve, openSections });
   const header = html.querySelector(".card-header");
   if ( header ) header.after(block);
   else (html.querySelector(".message-content") ?? html).prepend(block);
+
+  // The sphere's own description repeats every ability; keep it folded on sphere cards.
+  if ( flags.cast ) {
+    html.querySelectorAll(".card-description.collapsible, .description.collapsible").forEach(el => el.classList.add("collapsed"));
+  }
+
+  block.addEventListener("toggle", event => {
+    const details = event.target.closest?.("details[data-section]");
+    if ( !details || (details !== event.target) ) return;
+    if ( !OPEN_SECTIONS.has(message.id) ) OPEN_SECTIONS.set(message.id, new Map());
+    OPEN_SECTIONS.get(message.id).set(details.dataset.section, details.open);
+  }, true);
 
   block.addEventListener("click", async event => {
     const button = event.target.closest("[data-sc-action]");
