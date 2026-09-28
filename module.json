@@ -1,8 +1,8 @@
-{
+﻿{
   "id": "dnd5e-spheres",
   "title": "dnd5e Spheres",
-  "description": "Casting traditions, drawbacks, boons and spell points for the dnd5e system. Compatible with the Spheres 5E rules.",
-  "version": "0.1.0",
+  "description": "Casting traditions, spell points, spherecaster classes, magic spheres and talents for the dnd5e system. Compatible with the Spheres 5E rules.",
+  "version": "0.2.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14.368"
@@ -57,13 +57,53 @@
       "type": "Item",
       "system": "dnd5e",
       "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "classes",
+      "label": "Spheres: Spherecaster Classes",
+      "path": "packs/classes",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "subclasses",
+      "label": "Spheres: Subclasses",
+      "path": "packs/subclasses",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "class-features",
+      "label": "Spheres: Class Features",
+      "path": "packs/class-features",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "spheres",
+      "label": "Spheres: Magic Spheres",
+      "path": "packs/spheres",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "talents",
+      "label": "Spheres: Sphere Talents",
+      "path": "packs/talents",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
     }
   ],
   "packFolders": [
     {
       "name": "dnd5e Spheres",
       "sorting": "m",
-      "packs": ["features", "traditions", "drawbacks", "boons"]
+      "packs": ["features", "traditions", "drawbacks", "boons", "classes", "subclasses", "class-features", "spheres", "talents"]
     }
   ],
   "relationships": {

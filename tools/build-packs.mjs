@@ -1,5 +1,5 @@
 /**
- * Build the compendium packs from src/data.mjs.
+ * Build the compendium packs from src/data.mjs, src/classes.mjs and src/spheres-*.mjs.
  * Usage: npm run build:packs  (Foundry must not have the module's world open while this runs.)
  */
 import { createHash } from "node:crypto";
@@ -8,6 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { compilePack } from "@foundryvtt/foundryvtt-cli";
 import { BOONS, DRAWBACKS, TRADITIONS, WIKI } from "../src/data.mjs";
+import { buildSpherePacks } from "./build-spheres.mjs";
 
 const MODULE_ID = "dnd5e-spheres";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -144,8 +145,14 @@ const PACKS = {
   features: buildFeatures(),
   traditions: buildTraditions(),
   drawbacks: buildDrawbacks(),
-  boons: buildBoons()
+  boons: buildBoons(),
+  ...buildSpherePacks({ feat, docId, escape, SOURCE, STATS })
 };
+
+for ( const [name, docs] of Object.entries(PACKS) ) {
+  const ids = new Set(docs.map(d => d._id));
+  if ( ids.size !== docs.length ) throw new Error(`${name}: duplicate document IDs`);
+}
 
 for ( const [name, docs] of Object.entries(PACKS) ) {
   const src = path.join(BUILD, name);
