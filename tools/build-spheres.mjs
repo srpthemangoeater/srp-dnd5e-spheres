@@ -2,6 +2,7 @@
  * Builders for the spherecaster class and magic sphere compendiums.
  * Shared helpers are passed in from build-packs.mjs.
  */
+import { categoryLabel } from "../src/categories.mjs";
 import { CLASSES } from "../src/classes.mjs";
 import { SPHERES_A } from "../src/spheres-a.mjs";
 import { SPHERES_B } from "../src/spheres-b.mjs";
@@ -30,6 +31,13 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
     `<p><em>Full rules: <a href="${WIKI}/${page}">${label}</a> on the Spheres 5E wiki (Open Game Content, OGL 1.0a).</em></p>`;
   const advId = (...parts) => docId(parts.join("."));
 
+  /** Compendium folder document. */
+  const folderDoc = (key, name, parent=null, sort=0) => {
+    const _id = docId(`folder.${key}`);
+    return { _id, _key: `!folders!${_id}`, name, type: "Item", folder: parent, sorting: "a", sort, color: null,
+      description: "", flags: {}, _stats: STATS };
+  };
+
   /* -------------------------------------------- */
   /*  Classes                                     */
   /* -------------------------------------------- */
@@ -37,6 +45,33 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
   const featureDocs = [];
   const subclassDocs = [];
   const classDocs = [];
+  const featureFolders = [];
+  const subclassFolders = [];
+  const folderIds = {};
+  const featureFolder = (cls, sub) => {
+    const classKey = `features.${cls.key}`;
+    if ( !folderIds[classKey] ) {
+      const f = folderDoc(classKey, cls.name);
+      featureFolders.push(f);
+      folderIds[classKey] = f._id;
+    }
+    if ( !sub ) {
+      const coreKey = `${classKey}.core`;
+      if ( !folderIds[coreKey] ) {
+        const f = folderDoc(coreKey, `${cls.name} Features`, folderIds[classKey], -1);
+        featureFolders.push(f);
+        folderIds[coreKey] = f._id;
+      }
+      return folderIds[coreKey];
+    }
+    const subKey = `${classKey}.${slug(sub.name)}`;
+    if ( !folderIds[subKey] ) {
+      const f = folderDoc(subKey, sub.name, folderIds[classKey]);
+      featureFolders.push(f);
+      folderIds[subKey] = f._id;
+    }
+    return folderIds[subKey];
+  };
 
   const featureDoc = (cls, [level, name, summary], sub=null) => {
     const key = `${cls.key}.${sub ? slug(sub.name) + "." : ""}${slug(name)}`;
@@ -47,6 +82,7 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
       flags: { class: cls.key, ...(sub ? { subclass: slug(sub.name) } : {}), level }
     });
     doc.system.identifier = slug(name);
+    doc.folder = featureFolder(cls, sub);
     featureDocs.push(doc);
     return doc;
   };
@@ -136,6 +172,8 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
       _stats: STATS
     });
 
+    const subFolder = folderDoc(`subclasses.${cls.key}`, cls.name, null, ci);
+    subclassFolders.push(subFolder);
     for ( const [si, sub] of cls.subclasses.entries() ) {
       const subFeatures = sub.features.map(f => featureDoc(cls, f, sub));
       const subKey = slug(sub.name);
@@ -153,7 +191,7 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
             .map(a => [a._id, a])),
           spellcasting: { progression: "none", ability: "", preparation: {} }
         },
-        effects: [], folder: null, ownership: { default: 0 },
+        effects: [], folder: subFolder._id, ownership: { default: 0 },
         flags: { [MODULE_ID]: { key: subKey, class: cls.key } },
         _stats: STATS
       });
@@ -215,7 +253,21 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
 
   const sphereDocs = [];
   const talentDocs = [];
+  const talentFolders = [];
   for ( const [si, sphere] of SPHERES.entries() ) {
+    const sphereFolder = folderDoc(`talents.${sphere.key}`, sphere.name);
+    talentFolders.push(sphereFolder);
+    const categoryFolders = {};
+    const categoryFolder = category => {
+      if ( !categoryFolders[category] ) {
+        // "Other" sorts last; everything else alphabetically.
+        const f = folderDoc(`talents.${sphere.key}.${category}`, categoryLabel(category), sphereFolder._id,
+          category === "other" ? 1 : 0);
+        talentFolders.push(f);
+        categoryFolders[category] = f._id;
+      }
+      return categoryFolders[category];
+    };
     const abilities = {};
     const activities = {};
     sphere.abilities.forEach((ability, i) => {
@@ -251,15 +303,16 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
         system: { requirements: `${sphere.name}${advanced ? " (advanced)" : ""}` }
       });
       t.system.type.subtype = sphere.key;
+      t.folder = categoryFolder(category);
       talentDocs.push(t);
     }
   }
 
   return {
     classes: classDocs,
-    subclasses: subclassDocs,
-    "class-features": featureDocs,
+    subclasses: [...subclassFolders, ...subclassDocs],
+    "class-features": [...featureFolders, ...featureDocs],
     spheres: sphereDocs,
-    talents: talentDocs
+    talents: [...talentFolders, ...talentDocs]
   };
 }

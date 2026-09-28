@@ -83,7 +83,17 @@ function buildTraditions() {
   const drawbacks = byKey(DRAWBACKS);
   const boons = byKey(BOONS);
   const abilityNames = { int: "Intelligence", wis: "Wisdom", cha: "Charisma", con: "Constitution" };
-  return TRADITIONS.map((t, i) => {
+  // One folder per tradition family (a tradition and its subtraditions).
+  const folders = {};
+  const folderFor = root => {
+    if ( !folders[root] ) {
+      const _id = docId(`folder.traditions.${root}`);
+      folders[root] = { _id, _key: `!folders!${_id}`, name: root, type: "Item", folder: null, sorting: "a", sort: 0,
+        color: null, description: "", flags: {}, _stats: STATS };
+    }
+    return folders[root]._id;
+  };
+  const docs = TRADITIONS.map((t, i) => {
     const entries = t.drawbacks.map(d => Array.isArray(d) ? { key: d[0], count: d[1] } : { key: d, count: 1 });
     for ( const { key } of entries ) if ( !drawbacks[key] ) throw new Error(`${t.name}: unknown drawback ${key}`);
     for ( const key of t.boons ) if ( !boons[key] ) throw new Error(`${t.name}: unknown boon ${key}`);
@@ -91,7 +101,7 @@ function buildTraditions() {
     const list = items => items.length ? items.join(", ") : "None";
     const drawbackNames = entries.map(({ key, count }) => drawbacks[key].name + (count > 1 ? " (x2)" : ""));
     const key = t.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    return feat({
+    const doc = feat({
       key, name: t.name, type: "castingTradition", sort: i * 100, img: "icons/svg/book.svg",
       description: `<p>${escape(t.flavor)}</p>`
         + (t.parent ? `<p><strong>Subtradition of:</strong> ${escape(t.parent)}</p>` : "")
@@ -103,7 +113,10 @@ function buildTraditions() {
         + wikiLink("Casting Traditions: Sample Traditions"),
       flags: { kam: t.kam, drawbacks: entries, boons: t.boons, bonus: t.bonus, ...(t.parent ? { parent: t.parent } : {}) }
     });
+    doc.folder = folderFor(t.parent ?? t.name);
+    return doc;
   });
+  return [...Object.values(folders), ...docs];
 }
 
 function buildFeatures() {
@@ -164,5 +177,6 @@ for ( const [name, docs] of Object.entries(PACKS) ) {
     await writeFile(path.join(src, `${doc.name.replace(/[^A-Za-z0-9]+/g, "_")}_${doc._id}.json`), JSON.stringify(doc, null, 2));
   }
   await compilePack(src, dest, { log: false });
-  console.log(`${name}: ${docs.length} documents`);
+  const folders = docs.filter(d => d._key.startsWith("!folders!")).length;
+  console.log(`${name}: ${docs.length - folders} items${folders ? `, ${folders} folders` : ""}`);
 }
