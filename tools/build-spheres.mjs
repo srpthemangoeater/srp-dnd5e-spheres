@@ -4,6 +4,7 @@
  */
 import { categoryLabel } from "../src/categories.mjs";
 import { CLASSES } from "../src/classes.mjs";
+import { FREE_PICKS } from "../src/free-picks.mjs";
 import { SPHERES_A } from "../src/spheres-a.mjs";
 import { SPHERES_B } from "../src/spheres-b.mjs";
 
@@ -282,10 +283,15 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
     const abilityHtml = sphere.abilities.filter(a => !a.hidden).map(a => `<h3>${escape(a.name)}</h3><p>${escape(a.summary)}</p>`
       + (a.cost ? `<p><strong>Cost:</strong> ${a.cost} spell point${a.cost > 1 ? "s" : ""}.</p>` : "")
       + (a.augments?.length ? `<p><strong>Augments:</strong> ${a.augments.map(x => `${escape(x.label)} (${x.cost} SP)`).join("; ")}.</p>` : "")).join("");
+    const freePicks = FREE_PICKS[sphere.key] ?? [];
+    const picksHtml = freePicks.length
+      ? `<p><strong>When you first gain this sphere</strong> you also choose ${freePicks.map(p =>
+        `${p.count} ${p.categories.map(categoryLabel).join(" or ")} talent${p.count > 1 ? "s" : ""}`).join(" and ")}`
+        + ` for free.${freePicks.some(p => p.note) ? ` ${escape(freePicks.find(p => p.note).note)}` : ""}</p>` : "";
     const doc = feat({
       key: sphere.key, name: sphere.name, type: "sphere", img: SPHERE_ICONS[sphere.key], sort: si * 100,
-      description: `<p>${escape(sphere.summary)}</p>${abilityHtml}${wikiLink(sphere.key, sphere.name)}`,
-      flags: { sphere: sphere.key, abilities },
+      description: `<p>${escape(sphere.summary)}</p>${picksHtml}${abilityHtml}${wikiLink(sphere.key, sphere.name)}`,
+      flags: { sphere: sphere.key, abilities, freePicks },
       system: { activities }
     });
     sphereDocs.push(doc);

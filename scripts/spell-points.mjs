@@ -90,7 +90,7 @@ export function spellPointState(actor) {
 
 /**
  * Magic talents available and spent. Spheres and talents cost one talent each, except blast types that are
- * free for a sphere the actor has and items flagged as bonus talents.
+ * free for a sphere the actor has, a sphere's first-gain free picks and items flagged as bonus talents.
  */
 export function computeTalents(actor) {
   const flags = actor.flags?.[MODULE_ID] ?? {};
@@ -105,8 +105,9 @@ export function computeTalents(actor) {
   const spheres = actor.items.filter(i => isFeatureType(i, "sphere"));
   const owned = new Set(spheres.map(i => itemFlags(i).sphere ?? i.system.identifier));
   const isFree = item => {
-    const { free, bonusTalent } = itemFlags(item);
-    if ( bonusTalent ) return true;
+    const { free, bonusTalent, freePick } = itemFlags(item);
+    // Tradition/boon grants and the picks a sphere gives when first gained cost nothing.
+    if ( bonusTalent || freePick ) return true;
     return !!free && owned.has(free.toLowerCase());
   };
   const paid = [...spheres, ...actor.items.filter(i => isFeatureType(i, "talent"))].filter(i => !isFree(i));

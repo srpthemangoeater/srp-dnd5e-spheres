@@ -1,0 +1,21 @@
+<div class="free-picks-root">
+    <p>{{ localize "DND5E-SPHERES.FreePicks.Intro" sphere=sphere.name }}</p>
+    {{#each slots}}
+    <fieldset>
+        <legend>{{ label }}</legend>
+        {{#if note}}<p class="hint">{{ note }}</p>{{/if}}
+        {{#each selects}}
+        <select name="{{ name }}">
+            <option value="">{{ localize "DND5E-SPHERES.FreePicks.Choose" }}</option>
+            {{#each options}}<option value="{{ uuid }}">{{ name }}{{#if (ne category ../../label)}} ({{ category }}){{/if}}</option>{{/each}}
+        </select>
+        {{/each}}
+    </fieldset>
+    {{else}}
+    <p class="hint">{{ localize "DND5E-SPHERES.FreePicks.None" }}</p>
+    {{/each}}
+    <footer class="free-picks-footer">
+        <button type="button" data-action="later">{{ localize "DND5E-SPHERES.FreePicks.Later" }}</button>
+        <button type="submit" class="primary"><i class="fas fa-check" inert></i> {{ localize "DND5E-SPHERES.FreePicks.Add" }}</button>
+    </footer>
+</div>
