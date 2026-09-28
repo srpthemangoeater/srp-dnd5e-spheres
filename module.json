@@ -2,7 +2,7 @@
   "id": "dnd5e-spheres",
   "title": "dnd5e Spheres",
   "description": "Casting traditions, spell points, spherecaster classes, magic spheres and talents for the dnd5e system. Compatible with the Spheres 5E rules.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14.368"
@@ -127,6 +127,11 @@
         "id": "lib-wrapper",
         "type": "module",
         "reason": "Used to add spheres roll data when available."
+      },
+      {
+        "id": "dice-so-nice",
+        "type": "module",
+        "reason": "Shows 3D dice for sphere casts and drawback rolls."
       }
     ]
   },

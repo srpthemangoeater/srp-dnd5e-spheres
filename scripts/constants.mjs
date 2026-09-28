@@ -36,7 +36,9 @@ export const TEMPLATES = {
   tab: `modules/${MODULE_ID}/templates/spheres-tab.hbs`,
   content: `modules/${MODULE_ID}/templates/spheres-content.hbs`,
   builder: `modules/${MODULE_ID}/templates/tradition-builder.hbs`,
-  cast: `modules/${MODULE_ID}/templates/cast-dialog.hbs`
+  cast: `modules/${MODULE_ID}/templates/cast-dialog.hbs`,
+  browserFilters: `modules/${MODULE_ID}/templates/browser-filters.hbs`,
+  browserResults: `modules/${MODULE_ID}/templates/browser-results.hbs`
 };
 
 export const PACKS = {

@@ -1,0 +1,36 @@
+<div class="browser-filters">
+    <input type="search" name="text" value="{{ filters.text }}" placeholder="{{ localize 'DND5E-SPHERES.Browser.Search' }}"
+           aria-label="{{ localize 'DND5E-SPHERES.Browser.Search' }}" autofocus>
+    <label class="field">
+        <span>{{ localize "DND5E-SPHERES.Browser.Type" }}</span>
+        <select name="type">{{#each types}}<option value="{{ value }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}</select>
+    </label>
+    <label class="field">
+        <span>{{ localize "DND5E-SPHERES.Browser.Sphere" }}</span>
+        <select name="sphere">
+            <option value="">{{ localize "DND5E-SPHERES.Browser.All" }}</option>
+            {{#each spheres}}<option value="{{ value }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}
+        </select>
+    </label>
+    <label class="field">
+        <span>{{ localize "DND5E-SPHERES.Browser.Category" }}</span>
+        <select name="category">
+            <option value="">{{ localize "DND5E-SPHERES.Browser.All" }}</option>
+            {{#each categories}}<option value="{{ value }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}
+        </select>
+    </label>
+    <label class="field">
+        <span>{{ localize "DND5E-SPHERES.Browser.Level" }}</span>
+        <select name="level">{{#each levels}}<option value="{{ value }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}</select>
+    </label>
+    <label class="field">
+        <span>{{ localize "DND5E-SPHERES.Browser.Cost" }}</span>
+        <select name="cost">{{#each costs}}<option value="{{ value }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}</select>
+    </label>
+    <label class="check">
+        <input type="checkbox" name="hideOwned" {{#if filters.hideOwned}}checked{{/if}}>
+        {{ localize "DND5E-SPHERES.Browser.HideOwned" }}
+    </label>
+    <button type="button" data-action="reset" class="reset" data-tooltip="DND5E-SPHERES.Browser.Reset"
+            aria-label="{{ localize 'DND5E-SPHERES.Browser.Reset' }}"><i class="fas fa-rotate-left" inert></i></button>
+</div>

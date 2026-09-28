@@ -66,6 +66,9 @@
     {{#if noPool}}<p class="warning">{{ localize "DND5E-SPHERES.Cast.NoPool" }}</p>{{/if}}
 
     <footer class="cast-footer">
+        <button type="button" data-action="sendToChat">
+            <i class="fas fa-comment" inert></i> {{ localize "DND5E-SPHERES.Cast.SendToChat" }}
+        </button>
         <button type="button" data-action="cancel">{{ localize "Cancel" }}</button>
         <button type="submit" class="primary" {{#unless canCast}}disabled{{/unless}}>
             <i class="fas fa-wand-magic-sparkles" inert></i> {{ localize "DND5E-SPHERES.Cast.Cast" total=total }}

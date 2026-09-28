@@ -1,0 +1,29 @@
+<div class="browser-body">
+    <div class="browser-count">
+        {{ localize "DND5E-SPHERES.Browser.Count" count=total }}{{#if truncated}} &middot; {{ localize "DND5E-SPHERES.Browser.Truncated" }}{{/if}}
+    </div>
+    <ol class="browser-results">
+        {{#each results}}
+        <li class="browser-row {{#if owned}}owned{{/if}}" data-uuid="{{ uuid }}" draggable="true">
+            <img src="{{ img }}" alt="">
+            <div class="browser-main">
+                <a class="browser-name" data-action="view">{{ name }}</a>
+                <div class="browser-summary">{{ summary }}</div>
+            </div>
+            <div class="browser-tags">
+                <span class="spheres-tag">{{ sphereLabel }}</span>
+                {{#if categoryLabel}}<span class="spheres-tag category">{{ categoryLabel }}</span>{{/if}}
+                {{#if advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
+                {{#if cost}}<span class="spheres-tag cost">{{ cost }} SP</span>{{/if}}
+                {{#if owned}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Browser.Owned" }}</span>{{/if}}
+            </div>
+            {{#if @root.canAdd}}
+            <button type="button" class="add" data-action="add" data-tooltip="DND5E-SPHERES.Browser.Add"
+                    aria-label="{{ localize 'DND5E-SPHERES.Browser.Add' }}"><i class="fas fa-plus" inert></i></button>
+            {{/if}}
+        </li>
+        {{else}}
+        <li class="browser-empty">{{ localize "DND5E-SPHERES.Browser.NoResults" }}</li>
+        {{/each}}
+    </ol>
+</div>

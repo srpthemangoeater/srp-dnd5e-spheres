@@ -20,7 +20,36 @@
     "NoPool": "This character has no Spell Points pool yet.",
     "CreatePool": "Add Spell Points",
     "SpheresAndTalents": "Spheres & Talents",
-    "NoSpheres": "No spheres or talents yet. Drag them from the Magic Spheres and Sphere Talents compendiums.",
+    "NoSpheres": "No spheres or talents yet. Use Browse, or drag them from the Magic Spheres and Sphere Talents compendiums.",
+    "PostToChat": "Post to chat",
+    "EditItem": "Edit",
+    "DeleteItem": "Delete",
+    "DeleteTitle": "Delete {name}",
+    "DeleteConfirm": "Delete <strong>{name}</strong> from this character?",
+    "Browser": {
+      "Open": "Browse",
+      "Title": "Spheres Browser",
+      "Search": "Search spheres and talents",
+      "Type": "Type",
+      "Sphere": "Sphere",
+      "Category": "Category",
+      "Level": "Level",
+      "Cost": "Augment cost",
+      "All": "All",
+      "Basic": "Basic",
+      "AnyCost": "Any",
+      "NoCost": "No spell points",
+      "HasCost": "Costs spell points",
+      "HideOwned": "Hide owned",
+      "Reset": "Reset filters",
+      "Count": "{count} results",
+      "Truncated": "showing the first 250, refine the search",
+      "Owned": "Owned",
+      "Add": "Add to character",
+      "Added": "Added {name} to {actor}.",
+      "MissingSphere": "Added {name}, but the character does not have the {sphere} sphere yet.",
+      "NoResults": "Nothing matches these filters."
+    },
     "TalentsUsed": "Magic talents {spent} / {total}",
     "TalentsHint": "Classes {classes} + tradition {tradition} + bonus {bonus}. Each sphere and talent costs one talent; blast types granted by a sphere you have are free.",
     "TalentsOver": "More spheres and talents are known than magic talents allow.",
@@ -38,7 +67,8 @@
       "OverCap": "This costs more spell points than your proficiency bonus allows for one effect.",
       "OverPool": "You do not have enough spell points.",
       "NoPool": "This character has no Spell Points pool.",
-      "CannotCast": "This sphere effect cannot be cast with the chosen options."
+      "CannotCast": "This sphere effect cannot be cast with the chosen options.",
+      "SendToChat": "Send to chat"
     },
     "FeatureType": {
       "castingTradition": "Casting Tradition",
@@ -71,18 +101,27 @@
     },
     "Chat": {
       "Spent": "Spent {spent} SP ({remaining} / {max} left)",
+      "Spent0": "No spell points spent",
+      "Planned": "Would cost {total} SP (not cast)",
+      "Through": "Casting through {tradition}",
       "Talents": "Talents",
-      "Augments": "Augments"
+      "Augments": "Augments",
+      "Drawbacks": "Drawbacks",
+      "Show": "Show",
+      "Resolve": "Resolve",
+      "Resolved": "Resolved"
     },
     "Drawback": {
-      "Reminders": "Casting tradition drawbacks apply:",
+      "Acknowledged": "Acknowledged.",
+      "NoSpellPoints": "No spell points were spent, so this has no effect.",
+      "PainfulPassed": "Painful Magic: {name} passed the save ({total} vs DC {dc}).",
       "Draining": "Draining Casting: {name} takes {amount} damage and loses {amount} maximum hit points until a long rest (HP {previous} → {hp}).",
       "PainfulFlavor": "Painful Magic: Constitution save (DC {dc})",
-      "PainfulFailed": "Painful Magic: {name} failed the save and is poisoned for 1 round.",
+      "PainfulFailed": "Painful Magic: {name} failed the save ({total} vs DC {dc}) and is poisoned for 1 round.",
       "Material": "Material Casting: {name} expends {paid} gp in material components.",
       "MaterialShort": "Material Casting: {name} could only pay {paid} of {cost} gp.",
-      "WildSurge": "Wild Magic: a wild magic surge occurs!",
-      "WildCalm": "Wild Magic: no surge this time (surge on 10 or lower)."
+      "WildSurge": "Wild Magic: rolled {total}, a wild magic surge occurs!",
+      "WildCalm": "Wild Magic: rolled {total}, no surge (surge on 10 or lower)."
     },
     "Warning": {
       "OverCap": "Cannot spend {spent} spell points on one effect; the limit is {cap} (proficiency bonus).",
@@ -97,11 +136,15 @@
       },
       "AutomateDrawbacks": {
         "Name": "Automate numeric drawbacks",
-        "Hint": "Apply Draining Casting, Painful Magic, Material Casting and Wild Magic automatically when spell points are spent."
+        "Hint": "Resolving Draining Casting, Painful Magic, Material Casting or Wild Magic on a chat card applies its effect (damage, save, gold, surge roll). Material Casting also blocks spending without enough gold."
       },
       "DrawbackReminders": {
-        "Name": "Drawback reminders in chat",
-        "Hint": "Post a chat reminder for the caster's other drawbacks when spell points are spent."
+        "Name": "Drawback rows on chat cards",
+        "Hint": "Sphere chat cards list the caster's drawbacks, each with Show and Resolve buttons."
+      },
+      "AutoResolve": {
+        "Name": "Resolve numeric drawbacks automatically",
+        "Hint": "Resolve Draining Casting, Painful Magic, Material Casting and Wild Magic as soon as the card is posted, instead of waiting for the Resolve button."
       },
       "HeaderBox": {
         "Name": "Show spell points in the sheet header",

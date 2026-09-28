@@ -1,3 +1,5 @@
+import { categoryLabel } from "../src/categories.mjs";
+import { cardFlags, postCastPreview } from "./chat.mjs";
 import { MODULE_ID, SP_TARGET, TEMPLATES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { computeSpheres, getSpellPointsItem, isFeatureType, itemFlags, spellPointState, tierDice } from "./spell-points.mjs";
@@ -15,6 +17,14 @@ const plainText = html => {
   const div = document.createElement("div");
   div.innerHTML = html ?? "";
   return div.querySelector("p")?.textContent ?? div.textContent ?? "";
+};
+
+/** All paragraphs of a description except the wiki link line. */
+const fullText = html => {
+  const div = document.createElement("div");
+  div.innerHTML = html ?? "";
+  return [...div.querySelectorAll("p")].map(p => p.textContent.trim())
+    .filter(t => t && !t.startsWith("Full rules:")).join(" ");
 };
 
 /**
@@ -38,7 +48,7 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     window: { icon: "fas fa-wand-magic-sparkles", resizable: true },
     position: { width: 520, height: "auto" },
     form: { handler: CastDialog.#onSubmit, submitOnChange: false, closeOnSubmit: true },
-    actions: { cancel: CastDialog.#onCancel }
+    actions: { cancel: CastDialog.#onCancel, sendToChat: CastDialog.#onSendToChat }
   };
 
   /** @override */
@@ -225,26 +235,53 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     if ( effect ) await this.actor.update({ [`flags.${MODULE_ID}.cast.${effect.key}`]: effect.formula });
     if ( effect?.damageType ) await this.item.setFlag("dnd5e", `last.${activity.id}.damageType`, { 0: effect.damageType });
 
-    const cast = {
-      ability: this.meta.name,
-      talents: opts.selectedTalents.map(t => t.name),
-      augments: opts.selectedAugments.map(a => a.label),
-      total: opts.total,
-      formula: effect?.formula ?? null,
-      damageType: effect?.damageType ?? null
-    };
     const key = castKey(activity);
     CASTING.add(key);
     try {
       await activity.use({ scaling: opts.total }, { configure: false },
-        { data: { flags: { [MODULE_ID]: { cast } } } });
+        { data: { flags: { [MODULE_ID]: cardFlags(this.actor, this.#castData(opts, effect)) } } });
     } finally {
       CASTING.delete(key);
     }
   }
 
+  /** Everything the chat card needs to describe this cast, including the full text of each choice. */
+  #castData(opts, effect) {
+    const details = opts.selectedTalents.map(t => ({
+      name: t.name, category: categoryLabel(itemFlags(t).category), cost: Number(itemFlags(t).cost) || 0,
+      summary: fullText(t.system.description?.value)
+    }));
+    const augmentDetails = opts.selectedAugments.map(a => {
+      const item = a.key.startsWith("talent.") ? this.actor.items.get(a.key.slice(7)) : null;
+      return { label: a.label, cost: a.cost, summary: item ? fullText(item.system.description?.value) : "" };
+    });
+    return {
+      sphere: this.item.name,
+      ability: this.meta.name,
+      summary: this.#abilitySummary(),
+      talents: details.map(d => d.name),
+      augments: augmentDetails.map(a => a.label),
+      details,
+      augmentDetails,
+      total: opts.total,
+      formula: effect?.formula ?? null,
+      damageType: effect?.damageType ?? null
+    };
+  }
+
+  /** The ability's own paragraph from the sphere description. */
+  #abilitySummary() {
+    return plainText(this.item.system.description?.value?.split(`<h3>${this.meta.name}</h3>`)[1] ?? "");
+  }
+
   static #onCancel() {
     this.close();
+  }
+
+  /** Post the current choices to chat without casting. */
+  static async #onSendToChat() {
+    const opts = this.#options();
+    await postCastPreview(this.actor, this.#castData(opts, this.#effect(opts)));
   }
 }
 

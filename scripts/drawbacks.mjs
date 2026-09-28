@@ -1,8 +1,7 @@
-import { MODULE_ID } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { isFeatureType, itemFlags } from "./spell-points.mjs";
 
-/** Drawbacks with numeric effects that are automated. Everything else only posts a reminder. */
+/** Drawbacks with numeric effects that Resolve applies. Everything else is acknowledged. */
 const AUTOMATED = {
   "draining-casting": drainingCasting,
   "painful-magic": painfulMagic,
@@ -10,40 +9,57 @@ const AUTOMATED = {
   "wild-magic": wildMagic
 };
 
+/** Drawbacks whose effect depends on spell points being spent. */
+const NEEDS_SPELL_POINTS = new Set(["draining-casting", "painful-magic", "material-casting"]);
+
 const drawbacksOf = actor => actor.items.filter(i => isFeatureType(i, "drawback"));
 const hasDrawback = (actor, key) => drawbacksOf(actor).some(i => itemFlags(i).key === key);
 
-async function postMessage(actor, content, extra={}) {
-  return ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<div class="dnd5e-spheres-drawback">${content}</div>`,
-    ...extra
+const plainText = html => {
+  const div = document.createElement("div");
+  div.innerHTML = html ?? "";
+  return div.querySelector("p")?.textContent ?? div.textContent ?? "";
+};
+
+/**
+ * The drawback rows shown on a sphere chat card.
+ * @param {Actor5e} actor
+ * @returns {object[]}
+ */
+export function drawbackRows(actor) {
+  return drawbacksOf(actor).sort((a, b) => a.sort - b.sort).map(item => {
+    const { key, reminder, count = 1 } = itemFlags(item);
+    return {
+      key: key ?? item.id, id: item.id, name: count > 1 ? `${item.name} (x${count})` : item.name,
+      summary: plainText(item.system.description?.value), reminder: reminder ?? "",
+      automated: !!AUTOMATED[key], needsSpellPoints: NEEDS_SPELL_POINTS.has(key)
+    };
   });
 }
 
 /** Take 1 damage and lose 1 maximum hit point per spell point (2 each from 11th level) until a long rest. */
 async function drainingCasting(actor, { spent }) {
   const amount = spent * ((actor.system.details?.level ?? 0) >= 11 ? 2 : 1);
-  const hp = actor.system.attributes.hp;
+  const previous = actor.system.attributes.hp.value;
   await actor.update({ "system.attributes.hp.tempmax": (actor.system._source.attributes.hp.tempmax ?? 0) - amount });
   await actor.applyDamage(amount);
-  await postMessage(actor, game.i18n.format("DND5E-SPHERES.Drawback.Draining", {
-    name: actor.name, amount, hp: actor.system.attributes.hp.value, previous: hp.value
-  }));
+  return game.i18n.format("DND5E-SPHERES.Drawback.Draining", {
+    name: actor.name, amount, hp: actor.system.attributes.hp.value, previous
+  });
 }
 
-/** Constitution save (DC 10 + 2 x spell points) or be poisoned for 1 round. */
+/** Constitution save (DC 10 + 2 x spell points) or be poisoned for 1 round. The save is a normal roll, so 3D dice show. */
 async function painfulMagic(actor, { spent }) {
   const dc = 10 + (2 * spent);
   const rolls = await actor.rollSavingThrow({ ability: "con", target: dc }, {}, {
     data: { flavor: game.i18n.format("DND5E-SPHERES.Drawback.PainfulFlavor", { dc }) }
   });
   const roll = rolls?.[0];
-  if ( !roll ) return;
+  if ( !roll ) return null;
   const success = roll.isSuccess ?? (roll.total >= dc);
-  if ( success ) return;
+  if ( success ) return game.i18n.format("DND5E-SPHERES.Drawback.PainfulPassed", { name: actor.name, total: roll.total, dc });
   if ( !actor.statuses.has("poisoned") ) await actor.toggleStatusEffect("poisoned", { active: true });
-  await postMessage(actor, game.i18n.format("DND5E-SPHERES.Drawback.PainfulFailed", { name: actor.name }));
+  return game.i18n.format("DND5E-SPHERES.Drawback.PainfulFailed", { name: actor.name, total: roll.total, dc });
 }
 
 /** Expend 1 gp per spell point spent. */
@@ -52,17 +68,31 @@ async function materialCasting(actor, { spent }) {
   const paid = Math.min(gp, spent);
   await actor.update({ "system.currency.gp": gp - paid });
   const key = paid < spent ? "DND5E-SPHERES.Drawback.MaterialShort" : "DND5E-SPHERES.Drawback.Material";
-  await postMessage(actor, game.i18n.format(key, { name: actor.name, paid, cost: spent }));
+  return game.i18n.format(key, { name: actor.name, paid, cost: spent });
 }
 
-/** 10% chance of a wild magic surge. */
+/** 10% chance of a wild magic surge, rolled as a chat roll so Dice So Nice shows it. */
 async function wildMagic(actor) {
   const roll = await new Roll("1d100").evaluate();
   const surge = roll.total <= 10;
-  await roll.toMessage({
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    flavor: game.i18n.localize(surge ? "DND5E-SPHERES.Drawback.WildSurge" : "DND5E-SPHERES.Drawback.WildCalm")
-  });
+  const text = game.i18n.format(surge ? "DND5E-SPHERES.Drawback.WildSurge" : "DND5E-SPHERES.Drawback.WildCalm",
+    { total: roll.total });
+  await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }), flavor: text });
+  return text;
+}
+
+/**
+ * Resolve one drawback row: apply its effect when automated, otherwise just acknowledge it.
+ * @param {Actor5e} actor
+ * @param {object} row      A row from drawbackRows.
+ * @param {number} spent    Spell points spent on the effect.
+ * @returns {Promise<string|null>}  Result text, or null if the resolution was cancelled.
+ */
+export async function resolveDrawback(actor, row, spent) {
+  const handler = AUTOMATED[row.key];
+  if ( !handler || !getSetting("automateDrawbacks") ) return game.i18n.localize("DND5E-SPHERES.Drawback.Acknowledged");
+  if ( row.needsSpellPoints && !spent ) return game.i18n.localize("DND5E-SPHERES.Drawback.NoSpellPoints");
+  return handler(actor, { spent });
 }
 
 /**
@@ -75,31 +105,4 @@ export function canPayDrawbacks(actor, spent) {
   if ( gp >= spent ) return true;
   ui.notifications.warn(game.i18n.format("DND5E-SPHERES.Warning.MaterialGold", { cost: spent, gp }));
   return false;
-}
-
-/**
- * Apply automated drawbacks and post reminders for the rest after spell points were spent.
- * @param {Actor5e} actor
- * @param {{spent: number}} context
- */
-export async function runDrawbacks(actor, context) {
-  const drawbacks = drawbacksOf(actor);
-  if ( !drawbacks.length ) return;
-  const automate = getSetting("automateDrawbacks");
-  const reminders = [];
-  for ( const item of drawbacks ) {
-    const { key, reminder } = itemFlags(item);
-    const handler = AUTOMATED[key];
-    if ( handler && automate ) {
-      try {
-        await handler(actor, context);
-      } catch(err) {
-        console.error(`${MODULE_ID} | Drawback automation failed for ${item.name}`, err);
-      }
-    }
-    else if ( reminder ) reminders.push(`<li><strong>${item.name}:</strong> ${reminder}</li>`);
-  }
-  if ( reminders.length && getSetting("drawbackReminders") ) {
-    await postMessage(actor, `<p>${game.i18n.localize("DND5E-SPHERES.Drawback.Reminders")}</p><ul>${reminders.join("")}</ul>`);
-  }
 }

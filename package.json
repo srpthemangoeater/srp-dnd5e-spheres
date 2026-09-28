@@ -1,6 +1,6 @@
 {
   "name": "dnd5e-spheres",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Foundry VTT module: casting traditions and spell points for dnd5e, compatible with the Spheres 5E rules.",

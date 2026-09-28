@@ -6,7 +6,8 @@ Compatible with the Spheres 5E rules ([spheres5e.wikidot.com](https://spheres5e.
 
 - Foundry VTT: v14
 - dnd5e: 6.0.x
-- Optional: [Tidy 5e Sheets](https://github.com/kgar/foundry-vtt-tidy-5e-sheets), [libWrapper](https://github.com/ruipin/fvtt-lib-wrapper)
+- Optional: [Tidy 5e Sheets](https://github.com/kgar/foundry-vtt-tidy-5e-sheets), [libWrapper](https://github.com/ruipin/fvtt-lib-wrapper),
+  [Dice So Nice](https://gitlab.com/riccisi/foundryvtt-dice-so-nice)
 
 ## Compendiums
 
@@ -24,6 +25,16 @@ Compatible with the Spheres 5E rules ([spheres5e.wikidot.com](https://spheres5e.
 
 Entries summarise the mechanics and link to the full rules on the Spheres 5E wiki. Sphere variants
 are not included.
+
+Compendiums use folders: talents by sphere and then category (for example Destruction > Blast Type /
+Blast Shape / Other), class features by class and subclass, subclasses by class, and traditions by
+tradition family.
+
+## Spheres browser
+
+The **Browse** button on the Spheres tab opens a searchable browser for spheres and talents: search
+by name, filter by type, sphere, category, basic or advanced, and augment cost, hide what the character
+already has, then add with one click or drag a row onto a sheet.
 
 ## Features
 
@@ -71,16 +82,24 @@ Available in any formula on the actor or its items:
   points), and see the resulting spell point maximum update live. Saving creates the tradition,
   drawback and boon items on the actor and adds the Spell Points item if needed.
 
-### Drawback automation
-When spell points are spent:
+### Chat cards and drawbacks
+Sphere chat cards read in order: the casting tradition, the sphere ability (with its formula and damage
+type), each chosen talent and augment with its full text, the spell points spent, and then one row per
+drawback with **Show** (expand the details) and **Resolve** (apply it and mark the row resolved).
+Resolving applies the numeric drawbacks:
 - **Draining Casting:** damage and reduced hit point maximum (1 per spell point, 2 from 11th level)
   until a long rest.
 - **Painful Magic:** prompts a Constitution save (DC 10 + 2 x spell points) and applies poisoned on a failure.
-- **Material Casting:** deducts 1 gp per spell point and blocks the spending if there is not enough gold.
+- **Material Casting:** deducts 1 gp per spell point (spending is blocked without enough gold).
 - **Wild Magic:** rolls d100 for a 10% wild magic surge.
-- Every other drawback posts a short chat reminder.
+- Other drawbacks are acknowledged.
 
-Each of these can be turned off in the module settings.
+A world setting resolves the numeric drawbacks automatically instead. All rolls are normal chat rolls,
+so [Dice So Nice](https://gitlab.com/riccisi/foundryvtt-dice-so-nice) shows them in 3D when it is active.
+
+The cast dialog's **Send to chat** button posts the planned cast without casting it. Every sphere,
+talent, drawback and boon on the Spheres tab has a chat button, and the tradition has one that posts
+a summary of the tradition.
 
 ### Spherecaster classes
 - Each class has Hit Points, proficiency and ASI advancements, class features granted by level, a
@@ -114,6 +133,8 @@ Each of these can be turned off in the module settings.
   with its talents and a Cast button per ability. Spell points and sphere DC also show under the class
   line in the header.
 - **Tidy 5e Sheets:** the same *Spheres* tab.
+- In edit mode (or with the Tidy sheet unlocked) every sphere, talent, drawback and boon gets edit and
+  delete controls, and they can be dragged to reorder within their list.
 
 ## API
 
@@ -124,6 +145,8 @@ api.spellPointState(actor);    // { item, value, max, spent }
 api.openBuilder(actor);        // open the tradition builder
 api.computeTalents(actor);     // { total, spent, over, ... }
 api.openCast(activity);        // open the cast dialog for a sphere ability
+api.openBrowser(actor);        // open the spheres browser for an actor
+api.postTraditionCard(actor);  // post the casting tradition summary to chat
 ```
 
 ## Development

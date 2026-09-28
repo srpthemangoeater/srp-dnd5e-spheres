@@ -1,4 +1,18 @@
-<div class="dnd5e-spheres-content">
+{{!-- Per-item controls: post to chat always; edit and delete in edit mode. --}}
+{{#*inline "itemControls"}}
+<span class="item-controls">
+    <a class="item-control" data-spheres-action="chat" data-spheres-item-id="{{ id }}"
+       data-tooltip="DND5E-SPHERES.PostToChat" aria-label="{{ localize 'DND5E-SPHERES.PostToChat' }}"><i class="fas fa-comment" inert></i></a>
+    {{#if editable}}
+    <a class="item-control" data-spheres-action="edit" data-spheres-item-id="{{ id }}"
+       data-tooltip="DND5E-SPHERES.EditItem" aria-label="{{ localize 'DND5E-SPHERES.EditItem' }}"><i class="fas fa-pen" inert></i></a>
+    <a class="item-control delete" data-spheres-action="delete" data-spheres-item-id="{{ id }}"
+       data-tooltip="DND5E-SPHERES.DeleteItem" aria-label="{{ localize 'DND5E-SPHERES.DeleteItem' }}"><i class="fas fa-trash" inert></i></a>
+    {{/if}}
+</span>
+{{/inline}}
+
+<div class="dnd5e-spheres-content {{#if spheres.editable}}editing{{/if}}">
 {{#with spheres}}
 
     {{!-- Casting tradition --}}
@@ -6,7 +20,7 @@
         <div class="spheres-card-header">
             <div>
                 {{#if tradition}}
-                <a class="tradition-name" data-spheres-action="openItem" data-item-id="{{ tradition.id }}">{{ tradition.name }}</a>
+                <a class="tradition-name" data-spheres-action="openItem" data-spheres-item-id="{{ tradition.id }}">{{ tradition.name }}</a>
                 {{else}}
                 <span class="tradition-name empty">{{ localize "DND5E-SPHERES.NoTradition" }}</span>
                 {{/if}}
@@ -20,21 +34,35 @@
                     {{/if}}
                 </div>
             </div>
-            {{#if owner}}
-            <button type="button" class="spheres-button" data-spheres-action="builder">
-                <i class="fas fa-pen-ruler" inert></i> {{ localize "DND5E-SPHERES.EditTradition" }}
-            </button>
-            {{/if}}
+            <span class="header-buttons">
+                {{#if tradition}}
+                <button type="button" class="spheres-button icon" data-spheres-action="traditionChat"
+                        data-tooltip="DND5E-SPHERES.PostToChat" aria-label="{{ localize 'DND5E-SPHERES.PostToChat' }}">
+                    <i class="fas fa-comment" inert></i>
+                </button>
+                {{/if}}
+                {{#if owner}}
+                <button type="button" class="spheres-button" data-spheres-action="builder">
+                    <i class="fas fa-pen-ruler" inert></i> {{ localize "DND5E-SPHERES.EditTradition" }}
+                </button>
+                {{/if}}
+            </span>
         </div>
 
-        <div class="spheres-tags">
+        <div class="spheres-tags" data-sort-group="drawbacks">
             {{#each drawbacks}}
-            <a class="spheres-tag drawback" data-spheres-action="openItem" data-item-id="{{ id }}">
-                {{ name }}{{#if (gt count 1)}} &times;{{ count }}{{/if}}{{#if (gt weight 1)}} <span class="weight">({{ weight }})</span>{{/if}}
-            </a>
+            <span class="spheres-tag drawback" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
+                <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}">{{ name }}{{#if (gt count 1)}} &times;{{ count }}{{/if}}{{#if (gt weight 1)}} <span class="weight">({{ weight }})</span>{{/if}}</a>
+                {{> itemControls id=id editable=../editable }}
+            </span>
             {{/each}}
+        </div>
+        <div class="spheres-tags" data-sort-group="boons">
             {{#each boons}}
-            <a class="spheres-tag boon" data-spheres-action="openItem" data-item-id="{{ id }}">{{ name }}</a>
+            <span class="spheres-tag boon" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
+                <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}">{{ name }}</a>
+                {{> itemControls id=id editable=../editable }}
+            </span>
             {{/each}}
             {{#if traditionBonus}}
             <span class="spheres-tag bonus">{{ localize "DND5E-SPHERES.TraditionBonus" bonus=traditionBonus }}</span>
@@ -87,22 +115,34 @@
     <div class="spheres-card list">
         <div class="spheres-card-header">
             <h3>{{ localize "DND5E-SPHERES.SpheresAndTalents" }}</h3>
-            <span class="spheres-tag talents {{#if talentTracker.over}}over{{/if}}"
-                  data-tooltip="{{ localize 'DND5E-SPHERES.TalentsHint' classes=talentTracker.fromClasses tradition=talentTracker.tradition bonus=talentTracker.bonus }}">
-                {{ localize "DND5E-SPHERES.TalentsUsed" spent=talentTracker.spent total=talentTracker.total }}
+            <span class="header-buttons">
+                <span class="spheres-tag talents {{#if talentTracker.over}}over{{/if}}"
+                      data-tooltip="{{ localize 'DND5E-SPHERES.TalentsHint' classes=talentTracker.fromClasses tradition=talentTracker.tradition bonus=talentTracker.bonus }}">
+                    {{ localize "DND5E-SPHERES.TalentsUsed" spent=talentTracker.spent total=talentTracker.total }}
+                </span>
+                {{#if owner}}
+                <button type="button" class="spheres-button" data-spheres-action="browse">
+                    <i class="fas fa-book-atlas" inert></i> {{ localize "DND5E-SPHERES.Browser.Open" }}
+                </button>
+                {{/if}}
             </span>
         </div>
         {{#if talentTracker.over}}
         <p class="warning">{{ localize "DND5E-SPHERES.TalentsOver" }}</p>
         {{/if}}
         {{#if hasSpheres}}
+        <div class="sphere-list" data-sort-group="spheres">
         {{#each sphereList}}
-        <div class="sphere-entry">
+        <div class="sphere-entry" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
             <div class="sphere-head">
-                <a class="sphere-name" data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
+                <span class="sphere-title">
+                    {{#if ../editable}}<i class="fas fa-grip-vertical drag-handle" inert></i>{{/if}}
+                    <a class="sphere-name" data-spheres-action="openItem" data-spheres-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
+                    {{> itemControls id=id editable=../editable }}
+                </span>
                 <span class="sphere-abilities">
                     {{#each abilities}}
-                    <button type="button" class="spheres-button" data-spheres-action="cast" data-item-id="{{ ../id }}"
+                    <button type="button" class="spheres-button" data-spheres-action="cast" data-spheres-item-id="{{ ../id }}"
                             data-activity-id="{{ activityId }}" {{#unless @root.spheres.owner}}disabled{{/unless}}>
                         <i class="fas fa-wand-magic-sparkles" inert></i> {{ name }}{{#if cost}} ({{ cost }}){{/if}}
                     </button>
@@ -110,25 +150,31 @@
                 </span>
             </div>
             {{#if talents.length}}
-            <ul class="spheres-items">
+            <ul class="spheres-items" data-sort-group="talents-{{ key }}">
                 {{#each talents}}
-                <li class="talent">
-                    <a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
+                <li class="talent" data-sort-id="{{ id }}" {{#if ../../editable}}draggable="true"{{/if}}>
+                    {{#if ../../editable}}<i class="fas fa-grip-vertical drag-handle" inert></i>{{/if}}
+                    <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
                     {{#if advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
                     {{#if free}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Free" }}</span>{{/if}}
                     {{#if cost}}<span class="spheres-tag">{{ cost }} SP</span>{{/if}}
+                    {{> itemControls id=id editable=../../editable }}
                 </li>
                 {{/each}}
             </ul>
             {{/if}}
         </div>
         {{/each}}
+        </div>
         {{#if orphanTalents.length}}
         <div class="sphere-entry orphan">
             <div class="sphere-head"><span class="sphere-name">{{ localize "DND5E-SPHERES.OrphanTalents" }}</span></div>
-            <ul class="spheres-items">
+            <ul class="spheres-items" data-sort-group="orphans">
                 {{#each orphanTalents}}
-                <li class="talent"><a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a></li>
+                <li class="talent" data-sort-id="{{ id }}" {{#if ../editable}}draggable="true"{{/if}}>
+                    <a data-spheres-action="openItem" data-spheres-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a>
+                    {{> itemControls id=id editable=../editable }}
+                </li>
                 {{/each}}
             </ul>
         </div>

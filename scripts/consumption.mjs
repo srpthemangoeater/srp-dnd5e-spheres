@@ -1,7 +1,8 @@
 import { MODULE_ID } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { computeSpheres, getSpellPointsItem } from "./spell-points.mjs";
-import { canPayDrawbacks, runDrawbacks } from "./drawbacks.mjs";
+import { canPayDrawbacks } from "./drawbacks.mjs";
+import { autoResolve, cardFlags } from "./chat.mjs";
 
 /**
  * Spell points an activity is about to spend, read from the calculated usage updates.
@@ -18,7 +19,7 @@ function spellPointsSpent(actor, updates) {
   return spent > 0 ? { item, spent, newSpent } : null;
 }
 
-/** Enforce the per-effect cap and remember what was spent for the chat card and drawbacks. */
+/** Enforce the per-effect cap and record what was spent for the chat card and its drawback rows. */
 function onActivityConsumption(activity, usageConfig, messageConfig, updates) {
   const actor = activity.actor;
   if ( !actor ) return;
@@ -34,40 +35,20 @@ function onActivityConsumption(activity, usageConfig, messageConfig, updates) {
 
   const max = result.item.system.uses.max ?? 0;
   const sp = { spent: result.spent, remaining: Math.max(0, max - result.newSpent), max };
+  // Spending outside the cast dialog (e.g. the Spell Points item) still gets tradition and drawback rows.
+  if ( !foundry.utils.getProperty(messageConfig, `data.flags.${MODULE_ID}.drawbacks`) ) {
+    foundry.utils.mergeObject(messageConfig, { data: { flags: { [MODULE_ID]: cardFlags(actor) } } });
+  }
   foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.sp`, sp);
   usageConfig[MODULE_ID] = sp;
 }
 
-/** Run drawback automation once the activity has been used. */
+/** Resolve automated drawbacks straight away if the world setting asks for it. */
 function onPostUseActivity(activity, usageConfig, results) {
-  const sp = usageConfig[MODULE_ID];
-  if ( !sp || !activity.actor ) return;
-  runDrawbacks(activity.actor, { spent: sp.spent, activity, message: results.message });
-}
-
-/** Show spell points spent and remaining, and any cast choices, on the usage chat card. */
-function onRenderChatMessage(message, html) {
-  const { sp, cast } = message.flags?.[MODULE_ID] ?? {};
-  if ( (!sp && !cast) || html.querySelector(".dnd5e-spheres-sp")) return;
-  const badge = document.createElement("div");
-  badge.classList.add("dnd5e-spheres-sp");
-  const escape = foundry.utils.escapeHTML;
-  const lines = [];
-  if ( sp ) lines.push(`<div><i class="fas fa-atom" inert></i> ${game.i18n.format("DND5E-SPHERES.Chat.Spent", sp)}</div>`);
-  if ( cast?.talents?.length ) {
-    lines.push(`<div class="choices"><strong>${game.i18n.localize("DND5E-SPHERES.Chat.Talents")}:</strong> ${cast.talents.map(escape).join(", ")}</div>`);
-  }
-  if ( cast?.augments?.length ) {
-    lines.push(`<div class="choices"><strong>${game.i18n.localize("DND5E-SPHERES.Chat.Augments")}:</strong> ${cast.augments.map(escape).join(", ")}</div>`);
-  }
-  badge.innerHTML = lines.join("");
-  const anchor = html.querySelector(".card-header") ?? html.querySelector(".chat-card") ?? html.querySelector(".message-content");
-  if ( anchor?.classList.contains("card-header") ) anchor.after(badge);
-  else anchor?.prepend(badge);
+  if ( results.message?.flags?.[MODULE_ID]?.drawbacks ) autoResolve(results.message);
 }
 
 export function registerConsumptionHooks() {
   Hooks.on("dnd5e.activityConsumption", onActivityConsumption);
   Hooks.on("dnd5e.postUseActivity", onPostUseActivity);
-  Hooks.on("dnd5e.renderChatMessage", onRenderChatMessage);
 }
