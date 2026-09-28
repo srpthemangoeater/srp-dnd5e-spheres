@@ -1,0 +1,96 @@
+{
+  "id": "dnd5e-spheres",
+  "title": "dnd5e Spheres",
+  "description": "Casting traditions, drawbacks, boons and spell points for the dnd5e system. Compatible with the Spheres 5E rules.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14.368"
+  },
+  "authors": [
+    {
+      "name": "Mario"
+    }
+  ],
+  "esmodules": [
+    "scripts/module.mjs"
+  ],
+  "styles": [
+    "styles/dnd5e-spheres.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "features",
+      "label": "Spheres: Core Features",
+      "path": "packs/features",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "traditions",
+      "label": "Spheres: Casting Traditions",
+      "path": "packs/traditions",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "drawbacks",
+      "label": "Spheres: Drawbacks",
+      "path": "packs/drawbacks",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    },
+    {
+      "name": "boons",
+      "label": "Spheres: Boons",
+      "path": "packs/boons",
+      "type": "Item",
+      "system": "dnd5e",
+      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "dnd5e Spheres",
+      "sorting": "m",
+      "packs": ["features", "traditions", "drawbacks", "boons"]
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "6.0.0",
+          "verified": "6.0.5"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "tidy5e-sheet",
+        "type": "module",
+        "reason": "Adds a Spheres tab to Tidy 5e character sheets."
+      },
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "reason": "Used to add spheres roll data when available."
+      }
+    ]
+  },
+  "url": "https://github.com/srpthemangoeater/srp-dnd5e-spheres",
+  "manifest": "https://raw.githubusercontent.com/srpthemangoeater/srp-dnd5e-spheres/main/module.json",
+  "download": "https://github.com/srpthemangoeater/srp-dnd5e-spheres/archive/refs/heads/main.zip"
+}

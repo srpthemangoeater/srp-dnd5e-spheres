@@ -1,0 +1,108 @@
+﻿<div class="builder-root">
+<div class="builder-body">
+    <div class="builder-main">
+        <div class="builder-row">
+            <label class="field">
+                <span>{{ localize "DND5E-SPHERES.Builder.Preset" }}</span>
+                <select name="preset">
+                    <option value="">{{ localize "DND5E-SPHERES.Builder.Custom" }}</option>
+                    {{#each presets}}
+                    <option value="{{ uuid }}" {{#if selected}}selected{{/if}}>{{ label }}</option>
+                    {{/each}}
+                </select>
+            </label>
+            <label class="field">
+                <span>{{ localize "DND5E-SPHERES.Builder.Name" }}</span>
+                <input type="text" name="name" value="{{ state.name }}"
+                       placeholder="{{ localize 'DND5E-SPHERES.Builder.CustomTradition' }}">
+            </label>
+            <label class="field">
+                <span>{{ localize "DND5E-SPHERES.KeyAbility" }}</span>
+                <select name="kam">
+                    <option value="">&mdash;</option>
+                    {{#each abilities}}
+                    <option value="{{ key }}" {{#if selected}}selected{{/if}}>{{ label }} ({{ dnd5e-formatModifier mod }})</option>
+                    {{/each}}
+                </select>
+            </label>
+        </div>
+
+        <fieldset>
+            <legend>{{ localize "DND5E-SPHERES.Builder.Drawbacks" points=summary.points }}</legend>
+            <ul class="check-list drawback-list">
+                {{#each drawbacks}}
+                <li class="{{#if checked}}checked{{/if}}" data-tooltip="{{ summary }}" data-tooltip-direction="LEFT">
+                    <label class="check">
+                        <input type="checkbox" name="drawback.{{ uuid }}" {{#if checked}}checked{{/if}}>
+                        <span class="name">{{ name }}</span>
+                    </label>
+                    <span class="badges">
+                        {{#if repeatable}}
+                        <label class="badge twice">
+                            <input type="checkbox" name="drawbackTwice.{{ uuid }}" {{#if (gt count 1)}}checked{{/if}}
+                                   {{#unless checked}}disabled{{/unless}}>
+                            {{ localize "DND5E-SPHERES.Builder.TakenTwice" }}
+                        </label>
+                        {{/if}}
+                        {{#if (gt weight 1)}}<span class="badge double">{{ localize "DND5E-SPHERES.Builder.CountsTwo" }}</span>{{/if}}
+                        {{#if automated}}<span class="badge auto">{{ localize "DND5E-SPHERES.Builder.Automated" }}</span>{{/if}}
+                    </span>
+                </li>
+                {{/each}}
+            </ul>
+        </fieldset>
+    </div>
+
+    <div class="builder-side">
+        <fieldset>
+            <legend>{{ localize "DND5E-SPHERES.Builder.Boons" count=summary.boonCount slots=summary.boonSlots }}</legend>
+            <ul class="check-list boon-list">
+                {{#each boons}}
+                <li class="{{#if checked}}checked{{/if}} {{#if disabled}}disabled{{/if}}" data-tooltip="{{ summary }}" data-tooltip-direction="LEFT">
+                    <label class="check">
+                        <input type="checkbox" name="boon.{{ uuid }}" {{#if checked}}checked{{/if}} {{#if disabled}}disabled{{/if}}>
+                        <span class="name">{{ name }}</span>
+                    </label>
+                </li>
+                {{/each}}
+            </ul>
+        </fieldset>
+
+        <div class="summary">
+            <div class="kv"><span>{{ localize "DND5E-SPHERES.Builder.DrawbackPoints" }}</span><b>{{ summary.points }}</b></div>
+            <div class="kv"><span>{{ localize "DND5E-SPHERES.Builder.TradedForBoons" }}</span><b>&minus;{{ summary.boonCount }} &times; 2</b></div>
+            <div class="kv"><span>{{ localize "DND5E-SPHERES.Builder.Unspent" }}</span><b>{{ summary.unspent }}</b></div>
+            <div class="kv"><span>{{ localize "DND5E-SPHERES.Builder.BonusAtLevel" level=summary.level }}</span><b>+{{ summary.bonus }}</b></div>
+            <hr>
+            <label class="kv">
+                <span>{{ localize "DND5E-SPHERES.Builder.ClassSP" }}
+                    {{#if summary.classFromScale}}<small>({{ localize "DND5E-SPHERES.Builder.FromClasses" value=summary.classFromScale }})</small>{{/if}}
+                </span>
+                <input type="number" name="classSP" value="{{ state.classSP }}" step="1">
+            </label>
+            <label class="kv">
+                <span>{{ localize "DND5E-SPHERES.Builder.ManualBonus" }}</span>
+                <input type="number" name="spBonus" value="{{ state.spBonus }}" step="1">
+            </label>
+            <hr>
+            <div class="kv total">
+                <span>{{ localize "DND5E-SPHERES.Builder.MaxSP" }}</span>
+                <b>{{ summary.classSP }} + {{ summary.kamMod }} + {{ summary.bonus }}{{#if summary.spBonus}} + {{ summary.spBonus }}{{/if}} = {{ summary.max }}</b>
+            </div>
+            <div class="kv"><span>{{ localize "DND5E-SPHERES.SphereDC" }}</span><b>{{ summary.dc }}</b></div>
+            <label class="check">
+                <input type="checkbox" name="setSpellcasting" {{#if state.setSpellcasting}}checked{{/if}}>
+                {{ localize "DND5E-SPHERES.Builder.SetSpellcasting" }}
+            </label>
+            {{#if summary.overBoons}}
+            <p class="warning">{{ localize "DND5E-SPHERES.Warning.TooManyBoons" }}</p>
+            {{/if}}
+        </div>
+    </div>
+</div>
+
+<footer class="builder-footer">
+    <button type="button" data-action="cancel">{{ localize "Cancel" }}</button>
+    <button type="submit" class="primary"><i class="fas fa-save" inert></i> {{ localize "Save" }}</button>
+</footer>
+</div>

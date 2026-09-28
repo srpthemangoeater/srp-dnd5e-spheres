@@ -1,0 +1,269 @@
+/* dnd5e Spheres */
+
+.dnd5e-spheres-content {
+  --spheres-sp: #b57a0c;
+  --spheres-sp-soft: rgb(181 122 12 / 15%);
+  --spheres-drawback: #a83a3a;
+  --spheres-boon: #5e46a0;
+  --spheres-line: var(--dnd5e-color-gold, rgb(0 0 0 / 20%));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.dnd5e-spheres-content .spheres-card {
+  border: 1px solid var(--spheres-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dnd5e-spheres-content .spheres-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dnd5e-spheres-content .spheres-card-header h3 {
+  margin: 0;
+  font-size: var(--font-size-14, 14px);
+  border: none;
+}
+
+.dnd5e-spheres-content .tradition-name {
+  font-size: var(--font-size-18, 18px);
+  font-weight: bold;
+}
+
+.dnd5e-spheres-content .tradition-name.empty { opacity: 0.7; font-weight: normal; }
+.dnd5e-spheres-content .subtitle { font-size: var(--font-size-12, 12px); opacity: 0.8; }
+.dnd5e-spheres-content .hint { margin: 0; opacity: 0.8; }
+
+.dnd5e-spheres-content .spheres-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.dnd5e-spheres-content .spheres-tag {
+  font-size: var(--font-size-11, 11px);
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--spheres-sp-soft);
+  color: var(--spheres-sp);
+  white-space: nowrap;
+}
+
+.dnd5e-spheres-content .spheres-tag.drawback { background: rgb(168 58 58 / 12%); color: var(--spheres-drawback); }
+.dnd5e-spheres-content .spheres-tag.boon { background: rgb(94 70 160 / 12%); color: var(--spheres-boon); }
+.dnd5e-spheres-content .spheres-tag .weight { opacity: 0.7; }
+
+.theme-dark .dnd5e-spheres-content {
+  --spheres-sp: #e7b34a;
+  --spheres-drawback: #ec8f8f;
+  --spheres-boon: #b9a6f0;
+}
+
+.dnd5e-spheres-content .pool-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dnd5e-spheres-content .pool-value {
+  font-family: var(--dnd5e-font-roboto-condensed, monospace);
+  font-size: var(--font-size-18, 18px);
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.dnd5e-spheres-content .pips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+  min-width: 80px;
+}
+
+.dnd5e-spheres-content .pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--spheres-sp);
+  background: var(--spheres-sp);
+}
+
+.dnd5e-spheres-content .pip.spent { background: transparent; opacity: 0.5; }
+.dnd5e-spheres-content .pool-controls { display: flex; gap: 4px; }
+.dnd5e-spheres-content .pool-breakdown { font-size: var(--font-size-11, 11px); opacity: 0.75; }
+
+.dnd5e-spheres-content .spheres-button {
+  width: auto;
+  flex: none;
+  font-size: var(--font-size-12, 12px);
+  line-height: 1.6;
+  padding: 0 8px;
+}
+
+.dnd5e-spheres-content .spheres-button.icon { padding: 0 6px; }
+
+.dnd5e-spheres-content .spheres-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dnd5e-spheres-content .spheres-items img { width: 20px; height: 20px; vertical-align: middle; border: none; }
+.dnd5e-spheres-content .spheres-items .talent { padding-left: 20px; }
+
+/* Default sheet header */
+.dnd5e-spheres-header {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: var(--font-size-12, 12px);
+  font-weight: bold;
+}
+
+.dnd5e-spheres-header .sp { color: #e7b34a; }
+.dnd5e-spheres-header .label { opacity: 0.8; font-weight: normal; }
+
+/* Tidy tab spacing */
+.dnd5e-spheres-tidy .dnd5e-spheres-content { padding: 12px; }
+
+/* Chat card */
+.dnd5e-spheres-sp {
+  margin: 4px 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgb(181 122 12 / 15%);
+  color: #8a5c05;
+  font-weight: bold;
+  font-size: var(--font-size-12, 12px);
+}
+
+.dnd5e-spheres-drawback ul { margin: 4px 0 0; padding-left: 18px; }
+
+/* Tradition builder */
+.tradition-builder .window-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.tradition-builder .builder-root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.tradition-builder .builder-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 12px;
+  min-height: 0;
+}
+
+.tradition-builder .builder-main,
+.tradition-builder .builder-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.tradition-builder .builder-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.tradition-builder .field { display: flex; flex-direction: column; gap: 2px; }
+.tradition-builder .field > span { font-size: var(--font-size-11, 11px); text-transform: uppercase; opacity: 0.8; }
+
+.tradition-builder fieldset {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+}
+
+.tradition-builder .builder-main fieldset { flex: 1; }
+.tradition-builder .builder-side fieldset { flex: 1; max-height: 300px; }
+
+.tradition-builder .check-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.tradition-builder .check-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+  border-bottom: 1px solid rgb(128 128 128 / 20%);
+}
+
+.tradition-builder .check-list li.checked .name { font-weight: bold; }
+.tradition-builder .check-list li.disabled { opacity: 0.5; }
+.tradition-builder .check { display: flex; align-items: center; gap: 4px; }
+.tradition-builder .badges { display: flex; gap: 4px; align-items: center; }
+
+.tradition-builder .badge {
+  font-size: var(--font-size-10, 10px);
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgb(128 128 128 / 20%);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tradition-builder .badge.double { background: rgb(181 122 12 / 25%); }
+.tradition-builder .badge.auto { background: rgb(14 117 114 / 25%); }
+.tradition-builder .badge input { margin: 0; width: 12px; height: 12px; }
+
+.tradition-builder .summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgb(128 128 128 / 12%);
+}
+
+.tradition-builder .kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.tradition-builder .kv input { width: 60px; flex: none; text-align: center; }
+.tradition-builder .kv.total b { color: #b57a0c; }
+.tradition-builder .warning { color: #c04040; margin: 0; }
+.tradition-builder hr { width: 100%; margin: 2px 0; }
+
+.tradition-builder .builder-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tradition-builder .builder-footer button { flex: none; width: auto; padding: 0 16px; }

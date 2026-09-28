@@ -1,0 +1,90 @@
+{
+  "DND5E-SPHERES": {
+    "Tab": "Spheres",
+    "SpellPoints": "Spell Points",
+    "SP": "SP",
+    "DC": "DC",
+    "SphereDC": "Sphere DC",
+    "Attack": "Attack",
+    "KeyAbility": "Key ability",
+    "NoKeyAbility": "No key ability chosen yet.",
+    "NoTradition": "No casting tradition",
+    "EditTradition": "Edit tradition",
+    "TraditionBonus": "Drawbacks: +{bonus} SP",
+    "Cap": "Max {cap} SP per effect",
+    "CapHint": "Spell points spent on a single sphere effect, including augments, cannot exceed your proficiency bonus.",
+    "SpendOne": "Spend 1 spell point",
+    "RestoreOne": "Restore 1 spell point",
+    "UsePool": "Spend",
+    "Breakdown": "Class {class} + key ability {kam} + drawbacks {tradition} + bonus {manual}",
+    "NoPool": "This character has no Spell Points pool yet.",
+    "CreatePool": "Add Spell Points",
+    "SpheresAndTalents": "Spheres & Talents",
+    "NoSpheres": "No spheres or talents yet.",
+    "FeatureType": {
+      "castingTradition": "Casting Tradition",
+      "drawback": "Drawback",
+      "boon": "Boon",
+      "sphere": "Sphere",
+      "talent": "Magic Talent"
+    },
+    "Builder": {
+      "Title": "Casting Tradition",
+      "Preset": "Start from",
+      "Custom": "Custom tradition",
+      "CustomTradition": "Custom Tradition",
+      "Name": "Tradition name",
+      "Drawbacks": "Drawbacks ({points} points)",
+      "Boons": "Boons ({count} of {slots})",
+      "TakenTwice": "x2",
+      "CountsTwo": "Counts as 2",
+      "Automated": "Automated",
+      "DrawbackPoints": "Drawback points",
+      "TradedForBoons": "Traded for boons",
+      "Unspent": "Left for spell points",
+      "BonusAtLevel": "Bonus spell points at level {level}",
+      "ClassSP": "Class spell points (manual)",
+      "FromClasses": "+{value} from spherecaster classes",
+      "ManualBonus": "Other bonus",
+      "MaxSP": "Maximum spell points",
+      "SetSpellcasting": "Also use the key ability as this character's spellcasting ability"
+    },
+    "Chat": {
+      "Spent": "Spent {spent} SP ({remaining} / {max} left)"
+    },
+    "Drawback": {
+      "Reminders": "Casting tradition drawbacks apply:",
+      "Draining": "Draining Casting: {name} takes {amount} damage and loses {amount} maximum hit points until a long rest (HP {previous} → {hp}).",
+      "PainfulFlavor": "Painful Magic: Constitution save (DC {dc})",
+      "PainfulFailed": "Painful Magic: {name} failed the save and is poisoned for 1 round.",
+      "Material": "Material Casting: {name} expends {paid} gp in material components.",
+      "MaterialShort": "Material Casting: {name} could only pay {paid} of {cost} gp.",
+      "WildSurge": "Wild Magic: a wild magic surge occurs!",
+      "WildCalm": "Wild Magic: no surge this time (surge on 10 or lower)."
+    },
+    "Warning": {
+      "OverCap": "Cannot spend {spent} spell points on one effect; the limit is {cap} (proficiency bonus).",
+      "MaterialGold": "Material Casting needs {cost} gp but only {gp} gp is available.",
+      "TooManyBoons": "More boons are selected than the drawbacks allow (two drawback points per boon).",
+      "MissingPool": "The Spell Points feature could not be found in the dnd5e Spheres compendium."
+    },
+    "Settings": {
+      "EnforceCap": {
+        "Name": "Enforce spell point limit per effect",
+        "Hint": "Block activities that would spend more spell points on a single effect than the caster's proficiency bonus."
+      },
+      "AutomateDrawbacks": {
+        "Name": "Automate numeric drawbacks",
+        "Hint": "Apply Draining Casting, Painful Magic, Material Casting and Wild Magic automatically when spell points are spent."
+      },
+      "DrawbackReminders": {
+        "Name": "Drawback reminders in chat",
+        "Hint": "Post a chat reminder for the caster's other drawbacks when spell points are spent."
+      },
+      "HeaderBox": {
+        "Name": "Show spell points in the sheet header",
+        "Hint": "Show current spell points and sphere DC under the class line of the default dnd5e character sheet."
+      }
+    }
+  }
+}

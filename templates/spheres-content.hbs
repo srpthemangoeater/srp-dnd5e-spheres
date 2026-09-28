@@ -1,0 +1,104 @@
+<div class="dnd5e-spheres-content">
+{{#with spheres}}
+
+    {{!-- Casting tradition --}}
+    <div class="spheres-card tradition">
+        <div class="spheres-card-header">
+            <div>
+                {{#if tradition}}
+                <a class="tradition-name" data-spheres-action="openItem" data-item-id="{{ tradition.id }}">{{ tradition.name }}</a>
+                {{else}}
+                <span class="tradition-name empty">{{ localize "DND5E-SPHERES.NoTradition" }}</span>
+                {{/if}}
+                <div class="subtitle">
+                    {{#if kamLabel}}
+                    {{ localize "DND5E-SPHERES.KeyAbility" }}: {{ kamLabel }} ({{ dnd5e-formatModifier kamMod }})
+                    &middot; {{ localize "DND5E-SPHERES.SphereDC" }} {{ dc }}
+                    &middot; {{ localize "DND5E-SPHERES.Attack" }} {{ dnd5e-formatModifier attack }}
+                    {{else}}
+                    {{ localize "DND5E-SPHERES.NoKeyAbility" }}
+                    {{/if}}
+                </div>
+            </div>
+            {{#if owner}}
+            <button type="button" class="spheres-button" data-spheres-action="builder">
+                <i class="fas fa-pen-ruler" inert></i> {{ localize "DND5E-SPHERES.EditTradition" }}
+            </button>
+            {{/if}}
+        </div>
+
+        <div class="spheres-tags">
+            {{#each drawbacks}}
+            <a class="spheres-tag drawback" data-spheres-action="openItem" data-item-id="{{ id }}">
+                {{ name }}{{#if (gt count 1)}} &times;{{ count }}{{/if}}{{#if (gt weight 1)}} <span class="weight">({{ weight }})</span>{{/if}}
+            </a>
+            {{/each}}
+            {{#each boons}}
+            <a class="spheres-tag boon" data-spheres-action="openItem" data-item-id="{{ id }}">{{ name }}</a>
+            {{/each}}
+            {{#if traditionBonus}}
+            <span class="spheres-tag bonus">{{ localize "DND5E-SPHERES.TraditionBonus" bonus=traditionBonus }}</span>
+            {{/if}}
+        </div>
+    </div>
+
+    {{!-- Spell points --}}
+    <div class="spheres-card pool">
+        <div class="spheres-card-header">
+            <h3><i class="fas fa-atom" inert></i> {{ localize "DND5E-SPHERES.SpellPoints" }}</h3>
+            <span class="spheres-tag cap" data-tooltip="DND5E-SPHERES.CapHint">{{ localize "DND5E-SPHERES.Cap" cap=cap }}</span>
+        </div>
+        {{#if pool.exists}}
+        <div class="pool-row">
+            <span class="pool-value">{{ pool.value }} / {{ pool.max }}</span>
+            <div class="pips" aria-hidden="true">
+                {{#each pips}}<i class="pip {{#if spent}}spent{{/if}}"></i>{{/each}}
+            </div>
+            {{#if owner}}
+            <div class="pool-controls">
+                <button type="button" class="spheres-button icon" data-spheres-action="spend"
+                        data-tooltip="DND5E-SPHERES.SpendOne" aria-label="{{ localize 'DND5E-SPHERES.SpendOne' }}">
+                    <i class="fas fa-minus" inert></i>
+                </button>
+                <button type="button" class="spheres-button icon" data-spheres-action="restore"
+                        data-tooltip="DND5E-SPHERES.RestoreOne" aria-label="{{ localize 'DND5E-SPHERES.RestoreOne' }}">
+                    <i class="fas fa-plus" inert></i>
+                </button>
+                <button type="button" class="spheres-button" data-spheres-action="usePool">
+                    <i class="fas fa-wand-magic-sparkles" inert></i> {{ localize "DND5E-SPHERES.UsePool" }}
+                </button>
+            </div>
+            {{/if}}
+        </div>
+        <div class="pool-breakdown">
+            {{ localize "DND5E-SPHERES.Breakdown" class=classSP kam=kamMod tradition=traditionBonus manual=manual }}
+        </div>
+        {{else}}
+        <p class="hint">{{ localize "DND5E-SPHERES.NoPool" }}</p>
+        {{#if owner}}
+        <button type="button" class="spheres-button" data-spheres-action="createPool">
+            <i class="fas fa-plus" inert></i> {{ localize "DND5E-SPHERES.CreatePool" }}
+        </button>
+        {{/if}}
+        {{/if}}
+    </div>
+
+    {{!-- Spheres & talents (filled in by later phases) --}}
+    <div class="spheres-card list">
+        <div class="spheres-card-header"><h3>{{ localize "DND5E-SPHERES.SpheresAndTalents" }}</h3></div>
+        {{#if (or spheres.length talents.length)}}
+        <ul class="spheres-items">
+            {{#each spheres}}
+            <li><a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a></li>
+            {{/each}}
+            {{#each talents}}
+            <li class="talent"><a data-spheres-action="openItem" data-item-id="{{ id }}"><img src="{{ img }}" alt=""> {{ name }}</a></li>
+            {{/each}}
+        </ul>
+        {{else}}
+        <p class="hint">{{ localize "DND5E-SPHERES.NoSpheres" }}</p>
+        {{/if}}
+    </div>
+
+{{/with}}
+</div>

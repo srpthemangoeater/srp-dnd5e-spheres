@@ -1,0 +1,5 @@
+node_modules/
+build/
+packs/*/LOCK
+packs/*/LOG
+packs/*/LOG.old
