@@ -568,3 +568,11 @@
 .dnd5e-spheres-card .sc-drawbacks .sc-body { padding-left: 6px; }
 .dnd5e-spheres-card .sc-drawback.automated .sc-name .fa-bolt { color: #b57a0c; font-size: var(--font-size-10, 10px); }
 .dnd5e-spheres-card .sc-pending-auto { font-size: var(--font-size-10, 10px); color: #b57a0c; font-weight: bold; }
+
+/* Overrides and browser selection (0.5) */
+.dnd5e-spheres-content .spheres-tag.override,
+.spheres-browser .spheres-tag.override { background: rgb(168 58 58 / 18%); color: var(--spheres-drawback, #a83a3a); }
+.spheres-browser .browser-override { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
+.spheres-browser .browser-override input[type="text"] { flex: 1; }
+.spheres-browser .remove { width: 28px; flex: none; padding: 0; color: #0e7572; }
+.spheres-browser .browser-row.owned { opacity: 0.85; background: rgb(14 117 114 / 8%); }

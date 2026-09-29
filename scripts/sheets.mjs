@@ -68,23 +68,32 @@ export function buildSpheresContext(actor, editable) {
   const talentEntry = t => ({
     ...entry(t),
     advanced: !!itemFlags(t).advanced,
-    freePick: !!itemFlags(t).freePick,
+    freePick: !!itemFlags(t).freePick && !itemFlags(t).included,
+    included: !!(itemFlags(t).included || itemFlags(t).builtIn),
     free: talentData.isFree(t),
+    override: !!itemFlags(t).override,
+    overrideNote: itemFlags(t).overrideNote ?? "",
+    picksLeft: actor.isOwner && hasRemainingPicks(t),
     category: categoryLabel(itemFlags(t).category),
     cost: itemFlags(t).cost
   });
+  /** Castable abilities on an item (a sphere's base abilities or a package's geomancy). */
+  const abilitiesOf = item => Object.entries(itemFlags(item).abilities ?? {}).filter(([, m]) => !m.hidden)
+    .map(([activityId, m]) => ({ activityId, itemId: item.id, name: m.name, cost: m.cost }));
   const byType = type => actor.items.filter(i => isFeatureType(i, type)).sort(bySort).map(entry);
 
   const talentItems = actor.items.filter(i => isFeatureType(i, "talent"));
   const sphereList = actor.items.filter(i => isFeatureType(i, "sphere")).sort(bySort).map(sphere => {
     const key = sphereOf(sphere);
-    const abilities = Object.entries(itemFlags(sphere).abilities ?? {}).filter(([, m]) => !m.hidden)
-      .map(([activityId, m]) => ({ activityId, name: m.name, cost: m.cost }));
+    const talents = talentItems.filter(t => sphereOf(t) === key).sort(bySort);
     return {
-      ...entry(sphere), key, abilities,
+      ...entry(sphere), key,
+      abilities: [...abilitiesOf(sphere), ...talents.flatMap(abilitiesOf)],
+      override: !!itemFlags(sphere).override,
+      overrideNote: itemFlags(sphere).overrideNote ?? "",
       groupKey: `sphere.${sphere.id}`, groupOpen: isOpen(actor, `sphere.${sphere.id}`, true),
       picksLeft: actor.isOwner && hasRemainingPicks(sphere),
-      talents: talentItems.filter(t => sphereOf(t) === key).sort(bySort).map(talentEntry)
+      talents: talents.map(talentEntry)
     };
   });
   const ownedKeys = new Set(sphereList.map(s => s.key));
@@ -130,7 +139,27 @@ async function removeItem(item) {
   if ( confirmed ) await item.delete();
 }
 
-/** Cast one of a sphere's abilities, asking which when it has several. */
+/** Mark an item as taken with an override, or edit / clear its note. */
+export async function editOverride(item) {
+  const f = itemFlags(item);
+  const escape = foundry.utils.escapeHTML;
+  const result = await foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.format("DND5E-SPHERES.Override.Title", { name: item.name }) },
+    content: `<p>${game.i18n.localize("DND5E-SPHERES.Override.Hint")}</p>
+      <label class="checkbox"><input type="checkbox" name="override" ${f.override ? "checked" : ""}>
+        ${game.i18n.localize("DND5E-SPHERES.Override.Label")}</label>
+      <input type="text" name="note" value="${escape(f.overrideNote ?? "")}" placeholder="${game.i18n.localize("DND5E-SPHERES.Override.NotePlaceholder")}">`,
+    ok: {
+      label: "DND5E-SPHERES.Override.Save",
+      callback: (event, button) => ({ override: button.form.elements.override.checked, note: button.form.elements.note.value.trim() })
+    },
+    rejectClose: false
+  });
+  if ( !result ) return;
+  await item.update({ [`flags.${MODULE_ID}.override`]: result.override, [`flags.${MODULE_ID}.overrideNote`]: result.note });
+}
+
+/** Cast one of an item's abilities (sphere or package), asking which when it has several. */
 async function castFromSphere(sphere) {
   const abilities = Object.entries(itemFlags(sphere).abilities ?? {}).filter(([, m]) => !m.hidden);
   const open = id => {
@@ -155,12 +184,17 @@ function activateContextMenu(actor, element) {
   const editing = () => element.querySelector(".dnd5e-spheres-content")?.classList.contains("editing") ?? false;
   const isSphere = target => target.dataset.contextType === "sphere";
   const isTradition = target => target.dataset.contextType === "tradition";
+  const hasAbilities = t => Object.values(itemFlags(itemOf(t)).abilities ?? {}).some(m => !m.hidden);
+  const isTalentOrSphere = t => ["sphere", "talent"].includes(t.dataset.contextType);
   new foundry.applications.ux.ContextMenu(element, "[data-spheres-context]", [
     { label: "DND5E-SPHERES.Context.Cast", icon: "fa-solid fa-wand-magic-sparkles",
-      visible: t => isSphere(t) && actor.isOwner, onClick: (e, t) => castFromSphere(itemOf(t)) },
+      visible: t => !!itemOf(t) && actor.isOwner && hasAbilities(t), onClick: (e, t) => castFromSphere(itemOf(t)) },
     { label: "DND5E-SPHERES.Context.FreePicks", icon: "fa-solid fa-gift",
-      visible: t => isSphere(t) && actor.isOwner && hasRemainingPicks(itemOf(t)),
+      visible: t => !!itemOf(t) && actor.isOwner && hasRemainingPicks(itemOf(t)),
       onClick: (e, t) => new FreePicksDialog(itemOf(t)).render({ force: true }) },
+    { label: "DND5E-SPHERES.Override.Menu", icon: "fa-solid fa-unlock",
+      visible: t => isTalentOrSphere(t) && !!itemOf(t) && actor.isOwner && (editing() || !!itemFlags(itemOf(t)).override),
+      onClick: (e, t) => editOverride(itemOf(t)) },
     { label: "DND5E-SPHERES.PostToChat", icon: "fa-solid fa-comment",
       onClick: (e, t) => isTradition(t) ? postTraditionCard(actor) : postItemToChat(itemOf(t)) },
     { label: "DND5E-SPHERES.EditTradition", icon: "fa-solid fa-pen-ruler",

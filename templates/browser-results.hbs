@@ -15,11 +15,16 @@
                 {{#if categoryLabel}}<span class="spheres-tag category">{{ categoryLabel }}</span>{{/if}}
                 {{#if advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
                 {{#if cost}}<span class="spheres-tag cost">{{ cost }} SP</span>{{/if}}
-                {{#if owned}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Browser.Owned" }}</span>{{/if}}
+                {{#if owned}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Browser.Selected" }}</span>{{/if}}
             </div>
             {{#if @root.canAdd}}
+            {{#if owned}}
+            <button type="button" class="remove" data-action="remove" data-tooltip="DND5E-SPHERES.Browser.Deselect"
+                    aria-label="{{ localize 'DND5E-SPHERES.Browser.Deselect' }}"><i class="fas fa-check" inert></i></button>
+            {{else}}
             <button type="button" class="add" data-action="add" data-tooltip="DND5E-SPHERES.Browser.Add"
                     aria-label="{{ localize 'DND5E-SPHERES.Browser.Add' }}"><i class="fas fa-plus" inert></i></button>
+            {{/if}}
             {{/if}}
         </li>
         {{else}}

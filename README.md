@@ -9,6 +9,20 @@ Compatible with the Spheres 5E rules ([spheres5e.wikidot.com](https://spheres5e.
 - Optional: [Tidy 5e Sheets](https://github.com/kgar/foundry-vtt-tidy-5e-sheets), [libWrapper](https://github.com/ruipin/fvtt-lib-wrapper),
   [Dice So Nice](https://gitlab.com/riccisi/foundryvtt-dice-so-nice)
 
+## Installation
+
+1. In Foundry VTT, go to **Setup > Add-on Modules > Install Module**.
+2. Paste this into **Manifest URL** and click **Install**:
+
+   ```
+   https://github.com/srpthemangoeater/srp-dnd5e-spheres/releases/latest/download/module.json
+   ```
+
+3. Enable **dnd5e Spheres** in your world under **Game Settings > Manage Modules**.
+
+Foundry checks the same URL for updates. Each release attaches `module.json` and `module.zip`; they are
+built by the GitHub Actions workflow in `.github/workflows/release.yml` whenever a `v*` tag is pushed.
+
 ## Compendiums
 
 | Compendium | Contents |
@@ -21,7 +35,7 @@ Compatible with the Spheres 5E rules ([spheres5e.wikidot.com](https://spheres5e.
 | Spheres: Subclasses | 27 specializations, paths and callings |
 | Spheres: Class Features | 177 class and subclass features |
 | Spheres: Magic Spheres | 20 spheres with their base abilities as activities |
-| Spheres: Sphere Talents | 801 basic and advanced talents, grouped by sphere |
+| Spheres: Sphere Talents | 838 basic and advanced talents, grouped by sphere and category |
 
 Entries summarise the mechanics and link to the full rules on the Spheres 5E wiki. Sphere variants
 are not included.
@@ -34,7 +48,23 @@ tradition family.
 
 The **Browse** button on the Spheres tab opens a searchable browser for spheres and talents: search
 by name, filter by type, sphere, category, basic or advanced, and augment cost, hide what the character
-already has, then add with one click or drag a row onto a sheet.
+already has, then add with one click or drag a row onto a sheet. Items the character already has show as
+**Selected**; click the check to deselect (remove) them.
+
+**Overrides:** if adding something would go over the magic talent limit or miss a prerequisite (the
+sphere, or an advanced talent's level), the browser offers to add it as an **override** with an optional
+note such as "free from GM" or "feat". Tick *Add as override* to add everything that way. Overrides do
+not count against magic talents; they show an *Override* badge with the note on the sheet, and the note
+can be changed later from the row's right-click menu (*Override…*).
+
+### Packages and included talents
+- **Nature packages** grant their own geomancy abilities, cast like any sphere ability: Air (Breeze, Gust
+  of Wind, Purify Air), Earth (Bury, Sandblast, Tremor), Fire (Affect Fire, Move Fire, Quick Light),
+  Metal (Magnetize, Recover Ore, Reforge), Plant (Entangle, Harvest, Pummel), Water (Fog, Freeze, Vortex).
+- **Universal packages** carry their ability or pick: Dispel (Dispel), Mana (Manabond), Wild Magic
+  (Chaos Aura), Metasphere (one free metasphere talent) and Spellcrafting (one free dual sphere talent).
+- Talents a sphere always includes are added automatically for free: Darkvision (Dark), Exhausting Strike
+  (Death), Armored and Barrier (Protection).
 
 ## Features
 

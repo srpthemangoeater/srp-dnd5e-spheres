@@ -115,7 +115,7 @@
             <span class="header-buttons">
                 <span class="spheres-tag talents {{#if talentTracker.over}}over{{/if}}"
                       data-tooltip="{{ localize 'DND5E-SPHERES.TalentsHint' classes=talentTracker.fromClasses tradition=talentTracker.tradition bonus=talentTracker.bonus }}">
-                    {{ localize "DND5E-SPHERES.TalentsUsed" spent=talentTracker.spent total=talentTracker.total }}
+                    {{ localize "DND5E-SPHERES.TalentsUsed" spent=talentTracker.spent total=talentTracker.total }}{{#if talentTracker.overrides}} {{ localize "DND5E-SPHERES.Override.Count" count=talentTracker.overrides }}{{/if}}
                 </span>
                 {{#if owner}}
                 <button type="button" class="spheres-button" data-spheres-action="browse">
@@ -139,6 +139,7 @@
                 <img src="{{ sphere.img }}" alt="">
                 <span class="sphere-name">{{ sphere.name }}</span>
                 <span class="sp-count">{{ sphere.talents.length }}</span>
+                {{#if sphere.override}}<span class="spheres-tag override" data-tooltip="{{#if sphere.overrideNote}}{{ sphere.overrideNote }}{{else}}{{ localize "DND5E-SPHERES.Override.NoNote" }}{{/if}}">{{ localize "DND5E-SPHERES.Override.Badge" }}</span>{{/if}}
                 {{#if sphere.picksLeft}}
                 <button type="button" class="spheres-tag picks" data-spheres-action="freePicks" data-spheres-item-id="{{ sphere.id }}">
                     <i class="fas fa-gift" inert></i> {{ localize "DND5E-SPHERES.FreePicks.Pending" }}
@@ -146,7 +147,7 @@
                 {{/if}}
                 <span class="sphere-abilities">
                     {{#each sphere.abilities}}
-                    <button type="button" class="spheres-button" data-spheres-action="cast" data-spheres-item-id="{{ sphere.id }}"
+                    <button type="button" class="spheres-button" data-spheres-action="cast" data-spheres-item-id="{{ itemId }}"
                             data-activity-id="{{ activityId }}" {{#unless @root.spheres.owner}}disabled{{/unless}}>
                         <i class="fas fa-wand-magic-sparkles" inert></i> {{ name }}{{#if cost}} ({{ cost }}){{/if}}
                     </button>
@@ -158,8 +159,11 @@
                 {{#> row row=row type="talent" editable=@root.spheres.editable }}
                     {{#if row.category}}<span class="spheres-tag category">{{ row.category }}</span>{{/if}}
                     {{#if row.advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
-                    {{#if row.freePick}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.FreePicks.Badge" }}</span>
+                    {{#if row.override}}<span class="spheres-tag override" data-tooltip="{{#if row.overrideNote}}{{ row.overrideNote }}{{else}}{{ localize "DND5E-SPHERES.Override.NoNote" }}{{/if}}">{{ localize "DND5E-SPHERES.Override.Badge" }}{{#if row.overrideNote}}: {{ row.overrideNote }}{{/if}}</span>
+                    {{else if row.included}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Included" }}</span>
+                    {{else if row.freePick}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.FreePicks.Badge" }}</span>
                     {{else if row.free}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Free" }}</span>{{/if}}
+                    {{#if row.picksLeft}}<button type="button" class="spheres-tag picks" data-spheres-action="freePicks" data-spheres-item-id="{{ row.id }}"><i class="fas fa-gift" inert></i> {{ localize "DND5E-SPHERES.FreePicks.Pending" }}</button>{{/if}}
                     {{#if row.cost}}<span class="spheres-tag cost">{{ row.cost }} SP</span>{{/if}}
                 {{/row}}
                 {{else}}

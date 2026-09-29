@@ -2,7 +2,7 @@
   "id": "dnd5e-spheres",
   "title": "dnd5e Spheres",
   "description": "Casting traditions, spell points, spherecaster classes, magic spheres and talents for the dnd5e system. Compatible with the Spheres 5E rules.",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14.368"
@@ -32,7 +32,10 @@
       "path": "packs/features",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "traditions",
@@ -40,7 +43,10 @@
       "path": "packs/traditions",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "drawbacks",
@@ -48,7 +54,10 @@
       "path": "packs/drawbacks",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "boons",
@@ -56,7 +65,10 @@
       "path": "packs/boons",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "classes",
@@ -64,7 +76,10 @@
       "path": "packs/classes",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "subclasses",
@@ -72,7 +87,10 @@
       "path": "packs/subclasses",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "class-features",
@@ -80,7 +98,10 @@
       "path": "packs/class-features",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "spheres",
@@ -88,7 +109,10 @@
       "path": "packs/spheres",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     },
     {
       "name": "talents",
@@ -96,14 +120,27 @@
       "path": "packs/talents",
       "type": "Item",
       "system": "dnd5e",
-      "ownership": { "PLAYER": "OBSERVER", "ASSISTANT": "OWNER" }
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
     }
   ],
   "packFolders": [
     {
       "name": "dnd5e Spheres",
       "sorting": "m",
-      "packs": ["features", "traditions", "drawbacks", "boons", "classes", "subclasses", "class-features", "spheres", "talents"]
+      "packs": [
+        "features",
+        "traditions",
+        "drawbacks",
+        "boons",
+        "classes",
+        "subclasses",
+        "class-features",
+        "spheres",
+        "talents"
+      ]
     }
   ],
   "relationships": {
@@ -136,6 +173,8 @@
     ]
   },
   "url": "https://github.com/srpthemangoeater/srp-dnd5e-spheres",
-  "manifest": "https://raw.githubusercontent.com/srpthemangoeater/srp-dnd5e-spheres/main/module.json",
-  "download": "https://github.com/srpthemangoeater/srp-dnd5e-spheres/archive/refs/heads/main.zip"
+  "manifest": "https://github.com/srpthemangoeater/srp-dnd5e-spheres/releases/latest/download/module.json",
+  "download": "https://github.com/srpthemangoeater/srp-dnd5e-spheres/releases/download/v0.5.0/module.zip",
+  "bugs": "https://github.com/srpthemangoeater/srp-dnd5e-spheres/issues",
+  "license": "LICENSE"
 }

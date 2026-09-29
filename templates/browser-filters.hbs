@@ -33,4 +33,12 @@
     </label>
     <button type="button" data-action="reset" class="reset" data-tooltip="DND5E-SPHERES.Browser.Reset"
             aria-label="{{ localize 'DND5E-SPHERES.Browser.Reset' }}"><i class="fas fa-rotate-left" inert></i></button>
+    <div class="browser-override" data-tooltip="DND5E-SPHERES.Override.ModeHint">
+        <label class="check">
+            <input type="checkbox" name="addOverride" {{#if addMode.override}}checked{{/if}}>
+            <i class="fas fa-unlock" inert></i> {{ localize "DND5E-SPHERES.Override.Mode" }}
+        </label>
+        <input type="text" name="overrideNote" value="{{ addMode.note }}" {{#unless addMode.override}}disabled{{/unless}}
+               placeholder="{{ localize 'DND5E-SPHERES.Override.NotePlaceholder' }}">
+    </div>
 </div>

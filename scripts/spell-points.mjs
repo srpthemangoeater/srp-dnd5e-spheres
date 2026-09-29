@@ -90,7 +90,8 @@ export function spellPointState(actor) {
 
 /**
  * Magic talents available and spent. Spheres and talents cost one talent each, except blast types that are
- * free for a sphere the actor has, a sphere's first-gain free picks and items flagged as bonus talents.
+ * free for a sphere the actor has, a sphere's first-gain free picks, included talents and items flagged as bonus
+ * talents. Items taken with an override are counted separately and never trigger the limit warning.
  */
 export function computeTalents(actor) {
   const flags = actor.flags?.[MODULE_ID] ?? {};
@@ -105,21 +106,25 @@ export function computeTalents(actor) {
   const spheres = actor.items.filter(i => isFeatureType(i, "sphere"));
   const owned = new Set(spheres.map(i => itemFlags(i).sphere ?? i.system.identifier));
   const isFree = item => {
-    const { free, bonusTalent, freePick } = itemFlags(item);
-    // Tradition/boon grants and the picks a sphere gives when first gained cost nothing.
-    if ( bonusTalent || freePick ) return true;
+    const { free, bonusTalent, freePick, builtIn } = itemFlags(item);
+    // Tradition/boon grants, talents included with a sphere and first-gain picks cost nothing.
+    if ( bonusTalent || freePick || builtIn ) return true;
     return !!free && owned.has(free.toLowerCase());
   };
-  const paid = [...spheres, ...actor.items.filter(i => isFeatureType(i, "talent"))].filter(i => !isFree(i));
+  // Items taken with an override (GM gift, feat, ...) sit outside the magic talent budget.
+  const isOverride = item => !!itemFlags(item).override;
+  const all = [...spheres, ...actor.items.filter(i => isFeatureType(i, "talent"))];
+  const paid = all.filter(i => !isFree(i) && !isOverride(i));
+  const overrides = all.filter(isOverride).length;
   const total = fromClasses + tradition + bonus;
-  return { fromClasses, tradition, bonus, total, spent: paid.length, over: paid.length > total, isFree };
+  return { fromClasses, tradition, bonus, total, spent: paid.length, overrides, over: paid.length > total, isFree, isOverride };
 }
 
 /** Number of damage or healing dice at 1st, 5th, 11th and 17th level. */
 export const tierDice = level => level >= 17 ? 4 : level >= 11 ? 3 : level >= 5 ? 2 : 1;
 
 /** Default formulas for sphere abilities, used when no cast dialog choice overrides them. */
-function defaultEffects(actor, data) {
+export function defaultEffects(actor, data) {
   const level = data.level;
   const tier = tierDice(level);
   const projectile = level >= 17 ? "2d8" : level >= 11 ? "2d6" : level >= 5 ? "1d8" : "1d6";
@@ -127,7 +132,13 @@ function defaultEffects(actor, data) {
     blast: `${tier}d8`,
     cure: `${tier}d8 + ${data.kamMod}`,
     invigorate: `${data.prof}`,
-    projectile
+    projectile,
+    // Nature geomancy.
+    moveFire: `${tier}d8`,
+    pummel: `${tier}d12`,
+    vortex: `${tier}d8`,
+    freeze: "1d4",
+    magnetize: "1d6"
   };
 }
 

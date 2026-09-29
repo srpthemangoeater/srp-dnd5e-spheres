@@ -1,0 +1,52 @@
+name: Release
+
+# Push a tag like v0.5.0 to publish a release with module.json and module.zip attached.
+# Foundry installs from https://github.com/srpthemangoeater/srp-dnd5e-spheres/releases/latest/download/module.json
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build compendium packs
+        run: |
+          npm ci
+          npm run build:packs
+
+      - name: Set version and download URL from the tag
+        run: |
+          node -e '
+            const fs = require("fs");
+            const { GITHUB_REF_NAME: tag, GITHUB_REPOSITORY: repo } = process.env;
+            const m = JSON.parse(fs.readFileSync("module.json", "utf8"));
+            m.version = tag.replace(/^v/, "");
+            m.manifest = `https://github.com/${repo}/releases/latest/download/module.json`;
+            m.download = `https://github.com/${repo}/releases/download/${tag}/module.zip`;
+            fs.writeFileSync("module.json", JSON.stringify(m, null, 2) + "\n");
+          '
+
+      - name: Package module.zip
+        run: |
+          rm -f packs/*/LOCK
+          zip -r module.zip module.json README.md LICENSE OGL.md lang packs scripts src styles templates \
+            -x "packs/*/LOG*"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            module.json
+            module.zip
+          generate_release_notes: true
