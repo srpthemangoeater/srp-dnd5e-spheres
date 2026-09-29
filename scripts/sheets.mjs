@@ -77,7 +77,7 @@ export function buildSpheresContext(actor, editable) {
     category: categoryLabel(itemFlags(t).category),
     cost: itemFlags(t).cost
   });
-  /** Castable abilities on an item (a sphere's base abilities or a package's geomancy). */
+  /** Castable abilities on a sphere. Package abilities are reached through the sphere's package root (e.g. Geomancy). */
   const abilitiesOf = item => Object.entries(itemFlags(item).abilities ?? {}).filter(([, m]) => !m.hidden)
     .map(([activityId, m]) => ({ activityId, itemId: item.id, name: m.name, cost: m.cost }));
   const byType = type => actor.items.filter(i => isFeatureType(i, type)).sort(bySort).map(entry);
@@ -88,7 +88,7 @@ export function buildSpheresContext(actor, editable) {
     const talents = talentItems.filter(t => sphereOf(t) === key).sort(bySort);
     return {
       ...entry(sphere), key,
-      abilities: [...abilitiesOf(sphere), ...talents.flatMap(abilitiesOf)],
+      abilities: abilitiesOf(sphere),
       override: !!itemFlags(sphere).override,
       overrideNote: itemFlags(sphere).overrideNote ?? "",
       groupKey: `sphere.${sphere.id}`, groupOpen: isOpen(actor, `sphere.${sphere.id}`, true),

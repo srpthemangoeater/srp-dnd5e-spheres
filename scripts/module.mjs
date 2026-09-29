@@ -5,6 +5,7 @@ import { postItemToChat, postTraditionCard, registerChatHooks, resolveRow } from
 import { registerConfig } from "./config.mjs";
 import { registerConsumptionHooks } from "./consumption.mjs";
 import { FreePicksDialog, registerFreePickHooks } from "./free-picks.mjs";
+import { migrateWorld, registerMigrationSetting } from "./migration.mjs";
 import { registerSettings } from "./settings.mjs";
 import { registerSheetTab, registerTidy } from "./sheets.mjs";
 import { computeSpheres, computeTalents, drawbackBonus, patchRollData, spellPointState } from "./spell-points.mjs";
@@ -13,6 +14,7 @@ import { applyTradition, ensureSpellPointsItem, readTradition } from "./traditio
 
 Hooks.once("init", () => {
   registerSettings();
+  registerMigrationSetting();
   registerConfig();
   registerSheetTab();
   registerConsumptionHooks();
@@ -36,4 +38,5 @@ Hooks.once("ready", () => {
     openBrowser: actor => new SpheresBrowser(actor).render({ force: true }),
     openFreePicks: sphere => new FreePicksDialog(sphere).render({ force: true })
   };
+  migrateWorld();
 });

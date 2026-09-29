@@ -74,7 +74,13 @@ function renderCard(flags, { canResolve, openSections }) {
     const damage = cast.formula ? ` <span class="sc-formula">${escape(cast.formula)}${cast.damageType
       ? ` ${escape(CONFIG.DND5E.damageTypes[cast.damageType]?.label ?? cast.damageType)}` : ""}</span>` : "";
     const title = `<span class="sc-title"><strong>${escape(cast.ability)}</strong>${damage}</span>`;
-    parts.push(cast.summary ? section("ability", title, `<div class="sc-text">${escape(cast.summary)}</div>`, { open: wasOpen("ability", false) })
+    // Where the ability comes from, e.g. Nature > Geomancy > Fire Package > Move Fire.
+    if ( cast.path?.length > 1 ) {
+      parts.push(`<div class="sc-path">${cast.path.map(escape).join('<i class="fas fa-angle-right" inert></i>')}</div>`);
+    }
+    const body = [cast.info ? `<div class="sc-info">${escape(cast.info)}</div>` : "",
+      cast.summary ? `<div class="sc-text">${escape(cast.summary)}</div>` : ""].join("");
+    parts.push(body ? section("ability", title, body, { open: wasOpen("ability", false) })
       : `<div class="sc-block static">${title}</div>`);
 
     // Talents and augments: names in the summary, full text inside.

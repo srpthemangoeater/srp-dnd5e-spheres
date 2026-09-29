@@ -262,7 +262,9 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
       abilities[act._id] = {
         key: ability.key, name: ability.name, cost: ability.cost ?? 0, hidden: !!ability.hidden,
         groups: ability.groups ?? {}, multi: ability.multi ?? [], augments: ability.augments ?? [],
-        fx: ability.damage?.key ?? ability.heal?.key ?? null
+        fx: ability.damage?.key ?? ability.heal?.key ?? null,
+        // A package root (Nature Geomancy, Universal): the cast dialog lists the actor's packages and their abilities.
+        ...(ability.packages ? { packages: true } : {})
       };
     });
     const html = list.filter(a => !a.hidden).map(a => `<h3>${escape(a.name)}</h3><p>${escape(a.summary)}</p>`
@@ -324,6 +326,7 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
           + (extra.free ? `<p><em>Free blast type if you have the ${extra.free} sphere.</em></p>` : "")
           + (extra.builtIn ? `<p><em>Included with the ${sphere.name} sphere.</em></p>` : "")
           + (advanced ? "<p><strong>Advanced talent.</strong></p>" : "")
+          + (extra.packages ? `<p><strong>Package:</strong> ${extra.packages.map(escape).join(" or ")}.</p>` : "")
           + picksText(talentPicks, [], "this package")
           + built.html
           + wikiLink(sphere.key, `${sphere.name} sphere`),

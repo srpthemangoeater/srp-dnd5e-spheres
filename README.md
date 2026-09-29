@@ -58,11 +58,19 @@ not count against magic talents; they show an *Override* badge with the note on 
 can be changed later from the row's right-click menu (*Override…*).
 
 ### Packages and included talents
-- **Nature packages** grant their own geomancy abilities, cast like any sphere ability: Air (Breeze, Gust
-  of Wind, Purify Air), Earth (Bury, Sandblast, Tremor), Fire (Affect Fire, Move Fire, Quick Light),
-  Metal (Magnetize, Recover Ore, Reforge), Plant (Entangle, Harvest, Pummel), Water (Fog, Freeze, Vortex).
+- **Nature packages** grant their own geomancy abilities: Air (Breeze, Gust of Wind, Purify Air), Earth
+  (Bury, Sandblast, Tremor), Fire (Affect Fire, Move Fire, Quick Light), Metal (Magnetize, Recover Ore,
+  Reforge), Plant (Entangle, Harvest, Pummel), Water (Fog, Freeze, Vortex).
+- **Casting geomancy is nested:** *Geomancy* opens the cast dialog on your packages; pick a package, then
+  one of its abilities (each shows its action, range, duration, save or attack, damage and SP cost). The
+  geomancy talents for that package (for example Fire Mastery under Fire, Lava Mastery under Earth and
+  Fire) and the general ones (such as Create Nature) are listed below it as modifiers, followed by the
+  ability's augments. The chat card shows the path, e.g. *Nature > Geomancy > Fire Package > Move Fire*.
 - **Universal packages** carry their ability or pick: Dispel (Dispel), Mana (Manabond), Wild Magic
   (Chaos Aura), Metasphere (one free metasphere talent) and Spellcrafting (one free dual sphere talent).
+  Their abilities are cast the same way from Universal's *Package Ability*.
+- Casting a package ability from the package's own row (right-click > *Cast*) opens the same dialog with
+  that package and ability already chosen.
 - Talents a sphere always includes are added automatically for free: Darkvision (Dark), Exhausting Strike
   (Death), Armored and Barrier (Protection).
 
@@ -154,6 +162,8 @@ a summary of the tradition.
 - Destructive Blast damage follows the rules (1d8 per tier, or 1d8 + 1d8 per 2 levels when
   empowered) with the blast type's damage type; Ray and Tether switch to a spell attack.
   Cure, Invigorate and telekinetic Projectile also compute their formulas from the chosen talents.
+- Sphere and talent items already on characters are updated from the compendiums when the module's data
+  changes (ability metadata, new activities and rules text), once per version, by the active GM.
 - Metasphere talents from the Universal sphere (Quicken, Widen, Mass and others) appear as augments on
   every sphere.
 

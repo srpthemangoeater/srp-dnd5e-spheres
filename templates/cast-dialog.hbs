@@ -1,5 +1,48 @@
 <div class="cast-root">
+    <nav class="cast-path">
+        {{#each path}}{{#unless @first}}<i class="fas fa-angle-right" inert></i>{{/unless}}<span>{{ this }}</span>{{/each}}
+    </nav>
+
+    {{#if root}}
+    <fieldset class="cast-packages">
+        <legend>{{ localize "DND5E-SPHERES.Cast.Package" }}</legend>
+        {{#if root.none}}
+        <p class="hint">{{ localize "DND5E-SPHERES.Cast.NoPackages" }}</p>
+        {{else}}
+        <ul class="cast-tree">
+            {{#each root.packages}}
+            <li class="cast-package {{#if selected}}selected{{/if}}">
+                <label class="check package-name">
+                    <input type="radio" name="package" value="{{ id }}" {{#if selected}}checked{{/if}}>
+                    <span class="name">{{ name }}</span>
+                    <span class="count">{{ abilities.length }}</span>
+                </label>
+                {{#if selected}}
+                <ul class="cast-abilities">
+                    {{#each abilities}}
+                    <li class="cast-ability {{#if selected}}selected{{/if}}">
+                        <label class="check">
+                            <input type="radio" name="packageAbility" value="{{ ../id }}.{{ id }}" {{#if selected}}checked{{/if}}>
+                            <span class="name">{{ name }}</span>
+                            {{#if damage}}<span class="formula">{{ damage }}</span>{{/if}}
+                            <span class="badge cost">{{ cost }} SP</span>
+                        </label>
+                        <div class="ability-info">{{ info }}</div>
+                        {{#if selected}}<p class="ability-summary">{{ summary }}</p>{{/if}}
+                    </li>
+                    {{/each}}
+                </ul>
+                {{/if}}
+            </li>
+            {{/each}}
+        </ul>
+        {{/if}}
+    </fieldset>
+    {{else}}
     <p class="cast-description">{{ description }}</p>
+    {{#if info}}<div class="ability-info">{{ info }}</div>{{/if}}
+    {{/if}}
+
     <div class="cast-stats">
         <span>{{ localize "DND5E-SPHERES.SphereDC" }} <b>{{ dc }}</b></span>
         <span>{{ localize "DND5E-SPHERES.Attack" }} <b>{{ dnd5e-formatModifier attack }}</b></span>
@@ -64,6 +107,7 @@
     {{#if overCap}}<p class="warning">{{ localize "DND5E-SPHERES.Cast.OverCap" }}</p>{{/if}}
     {{#if overPool}}<p class="warning">{{ localize "DND5E-SPHERES.Cast.OverPool" }}</p>{{/if}}
     {{#if noPool}}<p class="warning">{{ localize "DND5E-SPHERES.Cast.NoPool" }}</p>{{/if}}
+    {{#if needsChoice}}<p class="hint">{{ localize "DND5E-SPHERES.Cast.ChoosePackage" }}</p>{{/if}}
 
     <footer class="cast-footer">
         <button type="button" data-action="sendToChat">

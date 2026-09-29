@@ -117,7 +117,12 @@
       "OverPool": "You do not have enough spell points.",
       "NoPool": "This character has no Spell Points pool.",
       "CannotCast": "This sphere effect cannot be cast with the chosen options.",
-      "SendToChat": "Send to chat"
+      "SendToChat": "Send to chat",
+      "Package": "Package",
+      "NoPackages": "This character has no packages with abilities for this sphere yet.",
+      "ChoosePackage": "Choose a package and one of its abilities.",
+      "Save": "{ability} save",
+      "SpellAttack": "Spell attack"
     },
     "FeatureType": {
       "castingTradition": "Casting Tradition",

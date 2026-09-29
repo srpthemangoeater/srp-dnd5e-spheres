@@ -576,3 +576,26 @@
 .spheres-browser .browser-override input[type="text"] { flex: 1; }
 .spheres-browser .remove { width: 28px; flex: none; padding: 0; color: #0e7572; }
 .spheres-browser .browser-row.owned { opacity: 0.85; background: rgb(14 117 114 / 8%); }
+
+/* Cast dialog: path and package tree */
+.cast-dialog .cast-path { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: bold; }
+.cast-dialog .cast-path i { opacity: 0.5; font-size: var(--font-size-11, 11px); }
+.cast-dialog .cast-path span:last-child { color: #b57a0c; }
+.cast-dialog .cast-tree, .cast-dialog .cast-abilities { list-style: none; margin: 0; padding: 0; }
+.cast-dialog .cast-package { padding: 2px 0; }
+.cast-dialog .cast-package .count {
+  font-size: var(--font-size-10, 10px); opacity: 0.6; border: 1px solid currentColor; border-radius: 8px; padding: 0 5px;
+}
+.cast-dialog .cast-package.selected > .package-name .name { font-weight: bold; }
+.cast-dialog .cast-abilities { margin: 2px 0 4px 22px; padding-left: 8px; border-left: 2px solid rgba(181, 122, 12, 0.5); }
+.cast-dialog .cast-ability { padding: 3px 4px; border-radius: 4px; }
+.cast-dialog .cast-ability.selected { background: rgba(181, 122, 12, 0.12); }
+.cast-dialog .cast-ability .check { width: 100%; }
+.cast-dialog .cast-ability .name { flex: 1; }
+.cast-dialog .cast-ability .formula { font-family: var(--font-mono, monospace); font-size: var(--font-size-11, 11px); opacity: 0.8; }
+.cast-dialog .ability-info { font-size: var(--font-size-11, 11px); opacity: 0.75; margin-left: 22px; }
+.cast-dialog .cast-root > .ability-info { margin-left: 0; }
+.cast-dialog .ability-summary { margin: 2px 0 0 22px; font-size: var(--font-size-12, 12px); }
+.dnd5e-spheres-card .sc-path { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: var(--font-size-11, 11px); opacity: 0.8; }
+.dnd5e-spheres-card .sc-path i { opacity: 0.6; font-size: 9px; }
+.dnd5e-spheres-card .sc-info { font-size: var(--font-size-11, 11px); opacity: 0.75; }
