@@ -206,8 +206,8 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
   const RANGE = r => r === "touch" ? { units: "touch", value: null } : r === "self" ? { units: "self", value: null }
     : { units: "ft", value: String(r) };
 
-  const activityFor = (sphere, ability, index) => {
-    const _id = docId(`activity.${sphere.key}.${ability.key}`);
+  const activityFor = (ownerKey, ability, index) => {
+    const _id = docId(`activity.${ownerKey}.${ability.key}`);
     const [dValue, dUnits, concentration] = ability.duration ?? [0, "inst", false];
     const base = {
       _id, type: ability.type, name: ability.name, sort: index * 100,
@@ -252,6 +252,35 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
     return base;
   };
 
+  /** Activities, cast metadata and description HTML for a list of sphere abilities on one item. */
+  const buildAbilities = (ownerKey, list=[]) => {
+    const abilities = {};
+    const activities = {};
+    list.forEach((ability, i) => {
+      const act = activityFor(ownerKey, ability, i);
+      activities[act._id] = act;
+      abilities[act._id] = {
+        key: ability.key, name: ability.name, cost: ability.cost ?? 0, hidden: !!ability.hidden,
+        groups: ability.groups ?? {}, multi: ability.multi ?? [], augments: ability.augments ?? [],
+        fx: ability.damage?.key ?? ability.heal?.key ?? null
+      };
+    });
+    const html = list.filter(a => !a.hidden).map(a => `<h3>${escape(a.name)}</h3><p>${escape(a.summary)}</p>`
+      + (a.cost ? `<p><strong>Cost:</strong> ${a.cost} spell point${a.cost > 1 ? "s" : ""}.</p>` : "")
+      + (a.augments?.length ? `<p><strong>Augments:</strong> ${a.augments.map(x => `${escape(x.label)} (${x.cost} SP)`).join("; ")}.</p>` : "")).join("");
+    return { abilities, activities, html };
+  };
+
+  /** Description of free picks and automatic grants. */
+  const picksText = (freePicks=[], grants=[], what="this sphere") => {
+    const parts = [];
+    if ( grants.length ) parts.push(`<p><strong>Included:</strong> ${grants.map(escape).join(", ")} (added automatically, free).</p>`);
+    if ( freePicks.length ) parts.push(`<p><strong>When you first gain ${what}</strong> you also choose ${freePicks.map(p =>
+      `${p.count} ${p.categories.map(categoryLabel).join(" or ")} talent${p.count > 1 ? "s" : ""}`).join(" and ")}`
+      + ` for free.${freePicks.some(p => p.note) ? ` ${escape(freePicks.find(p => p.note).note)}` : ""}</p>`);
+    return parts.join("");
+  };
+
   const sphereDocs = [];
   const talentDocs = [];
   const talentFolders = [];
@@ -269,44 +298,39 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
       }
       return categoryFolders[category];
     };
-    const abilities = {};
-    const activities = {};
-    sphere.abilities.forEach((ability, i) => {
-      const act = activityFor(sphere, ability, i);
-      activities[act._id] = act;
-      abilities[act._id] = {
-        key: ability.key, name: ability.name, cost: ability.cost ?? 0, hidden: !!ability.hidden,
-        groups: ability.groups ?? {}, multi: ability.multi ?? [], augments: ability.augments ?? [],
-        fx: ability.damage?.key ?? ability.heal?.key ?? null
-      };
-    });
-    const abilityHtml = sphere.abilities.filter(a => !a.hidden).map(a => `<h3>${escape(a.name)}</h3><p>${escape(a.summary)}</p>`
-      + (a.cost ? `<p><strong>Cost:</strong> ${a.cost} spell point${a.cost > 1 ? "s" : ""}.</p>` : "")
-      + (a.augments?.length ? `<p><strong>Augments:</strong> ${a.augments.map(x => `${escape(x.label)} (${x.cost} SP)`).join("; ")}.</p>` : "")).join("");
+    const { abilities, activities, html: abilityHtml } = buildAbilities(sphere.key, sphere.abilities);
     const freePicks = FREE_PICKS[sphere.key] ?? [];
-    const picksHtml = freePicks.length
-      ? `<p><strong>When you first gain this sphere</strong> you also choose ${freePicks.map(p =>
-        `${p.count} ${p.categories.map(categoryLabel).join(" or ")} talent${p.count > 1 ? "s" : ""}`).join(" and ")}`
-        + ` for free.${freePicks.some(p => p.note) ? ` ${escape(freePicks.find(p => p.note).note)}` : ""}</p>` : "";
+    const grants = sphere.grants ?? [];
+    for ( const g of grants ) {
+      if ( !sphere.talents.some(t => t[0] === g) ) throw new Error(`${sphere.name}: granted talent ${g} is missing`);
+    }
     const doc = feat({
       key: sphere.key, name: sphere.name, type: "sphere", img: SPHERE_ICONS[sphere.key], sort: si * 100,
-      description: `<p>${escape(sphere.summary)}</p>${picksHtml}${abilityHtml}${wikiLink(sphere.key, sphere.name)}`,
-      flags: { sphere: sphere.key, abilities, freePicks },
+      description: `<p>${escape(sphere.summary)}</p>${picksText(freePicks, grants)}${abilityHtml}${wikiLink(sphere.key, sphere.name)}`,
+      flags: { sphere: sphere.key, abilities, freePicks, grants },
       system: { activities }
     });
     sphereDocs.push(doc);
 
-    for ( const [ti, [name, category, advanced, summary, extra={}]] of sphere.talents.entries() ) {
+    for ( const [ti, [name, category, advanced, summary, extraIn={}]] of sphere.talents.entries() ) {
       const key = `${sphere.key}.${slug(name)}`;
+      // Talents can carry their own abilities (e.g. Nature packages) and free picks (e.g. Universal packages).
+      const { abilities: talentAbilities, freePicks: talentPicks, ...extra } = extraIn;
+      const built = buildAbilities(key, talentAbilities);
       const costText = extra.cost ? `<p><strong>Augment:</strong> ${extra.cost > 0 ? "+" : ""}${extra.cost} spell point${Math.abs(extra.cost) > 1 ? "s" : ""}.</p>` : "";
       const t = feat({
         key, name, type: "talent", img: advanced ? "icons/svg/upgrade.svg" : SPHERE_ICONS[sphere.key], sort: ti * 10,
         description: `<p>${escape(summary)}</p>${costText}`
           + (extra.free ? `<p><em>Free blast type if you have the ${extra.free} sphere.</em></p>` : "")
+          + (extra.builtIn ? `<p><em>Included with the ${sphere.name} sphere.</em></p>` : "")
           + (advanced ? "<p><strong>Advanced talent.</strong></p>" : "")
+          + picksText(talentPicks, [], "this package")
+          + built.html
           + wikiLink(sphere.key, `${sphere.name} sphere`),
-        flags: { sphere: sphere.key, category, advanced: !!advanced, ...extra },
-        system: { requirements: `${sphere.name}${advanced ? " (advanced)" : ""}` }
+        flags: { sphere: sphere.key, category, advanced: !!advanced, ...extra,
+          ...(talentAbilities?.length ? { abilities: built.abilities } : {}),
+          ...(talentPicks?.length ? { freePicks: talentPicks } : {}) },
+        system: { requirements: `${sphere.name}${advanced ? " (advanced)" : ""}`, activities: built.activities }
       });
       t.system.type.subtype = sphere.key;
       t.folder = categoryFolder(category);

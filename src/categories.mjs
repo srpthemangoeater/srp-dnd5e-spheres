@@ -2,7 +2,7 @@
 export const CATEGORY_LABELS = {
   aegis: "Aegis", alter: "Alter", alterTime: "Alter Time", base: "Base Companion", blastShape: "Blast Shape",
   blastType: "Blast Type", catch: "Catch", charm: "Charm", consecration: "Consecration", darkness: "Darkness",
-  dispel: "Dispel", divine: "Divine", enhancement: "Enhancement", figment: "Figment", form: "Form",
+  dispel: "Dispel", divine: "Divine", dualSphere: "Dual Sphere", enhancement: "Enhancement", figment: "Figment", form: "Form",
   genotype: "Genotype", geomancy: "Geomancy", ghostStrike: "Ghost Strike", glamer: "Glamer", glow: "Glow",
   gravity: "Gravity", lens: "Lens", levitate: "Levitate", manabond: "Manabond", mantle: "Mantle", meld: "Meld",
   metasphere: "Metasphere", motif: "Motif", nimbus: "Nimbus", package: "Package", projectile: "Projectile",

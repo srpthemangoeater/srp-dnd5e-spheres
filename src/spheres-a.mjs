@@ -174,6 +174,7 @@ export const SPHERES_A = [
   {
     key: "dark", name: "Dark",
     summary: "Create magical darkness and grant shadowy powers.",
+    grants: ["Darkvision"],
     abilities: [
       { key: "darkness", name: "Darkness", type: "utility", activation: "action", range: 120, template: ["sphere", 15],
         duration: [1, "minute", true],
@@ -200,6 +201,7 @@ export const SPHERES_A = [
       ["Snagging Darkness", "darkness", 0, "Entering requires a Dexterity save or become restrained."],
       ["Tenebrous Legerdemain", "darkness", 0, "Steal objects from creatures inside with a bonus action."],
       ["Thick Darkness", "darkness", 0, "The darkness is difficult terrain and creatures cannot Dash or Disengage in it."],
+      ["Darkvision", "meld", 0, "The target gains darkvision 60 ft (or +30 ft to existing darkvision); 120 ft for 2 spell points.", { builtIn: true }],
       ["Blindfold", "meld", 0, "A shadow band blinds the target (Wisdom save each round ends it)."],
       ["Clearsight", "meld", 0, "Immunity to the penalties of darkness talents."],
       ["Dark Slaughter", "meld", 0, "+1d6 damage (up to 1d12) against foes the target has advantage on or cannot be seen by in darkness."],
@@ -229,6 +231,7 @@ export const SPHERES_A = [
   {
     key: "death", name: "Death",
     summary: "Strike with negative energy and raise the dead.",
+    grants: ["Exhausting Strike"],
     abilities: [
       { key: "ghostStrike", name: "Ghost Strike", type: "save", activation: "action", range: 30, save: "con",
         duration: [0, "inst", false],
@@ -242,6 +245,7 @@ export const SPHERES_A = [
         augments: [NO_CONC] }
     ],
     talents: [
+      ["Exhausting Strike", "ghostStrike", 0, "Constitution save or gain 1 level of exhaustion for 10 minutes (stacking up to your proficiency bonus); 1 spell point makes it last until removed.", { builtIn: true }],
       ["Command Undead", "ghostStrike", 0, "Charm an undead while you concentrate (up to 10 minutes)."],
       ["Curse", "ghostStrike", 0, "A lasting curse (Wisdom save), such as blindness or vulnerability to a damage type.", { cost: 1 }],
       ["Inflict Disease", "ghostStrike", 0, "The target must save or contract a disease.", { cost: 2 }],

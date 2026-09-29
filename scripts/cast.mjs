@@ -2,7 +2,7 @@ import { categoryLabel } from "../src/categories.mjs";
 import { cardFlags, postCastPreview } from "./chat.mjs";
 import { MODULE_ID, SP_TARGET, TEMPLATES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
-import { computeSpheres, getSpellPointsItem, isFeatureType, itemFlags, spellPointState, tierDice } from "./spell-points.mjs";
+import { computeSpheres, defaultEffects, getSpellPointsItem, isFeatureType, itemFlags, spellPointState, tierDice } from "./spell-points.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -211,7 +211,13 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
         const base = level >= 17 ? "2d8" : level >= 11 ? "2d6" : level >= 5 ? "1d8" : "1d6";
         return { key: "projectile", formula: withBonus(base), damageType };
       }
-      default: return null;
+      default: {
+        if ( !this.meta.fx ) return null;
+        // Other damaging abilities (e.g. Nature geomancy): level-based default plus talent and augment bonuses.
+        let formula = withBonus(defaultEffects(actor, data)[this.meta.fx] ?? "0");
+        if ( this.#state.augments.has("base.bonus") ) formula += ` + ${data.kamMod}`;
+        return { key: this.meta.fx, formula, damageType };
+      }
     }
   }
 

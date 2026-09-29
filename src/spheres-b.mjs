@@ -2,6 +2,14 @@
 
 const NO_CONC = { key: "noConc", label: "Lasts without concentration", cost: 2 };
 
+/** A Nature geomancy ability: an action at 30 ft that lasts up to 1 minute with concentration unless noted. */
+const GEO = (key, name, opts) => {
+  const ability = { key, name, type: "utility", activation: "action", range: 30, duration: [1, "minute", true], ...opts };
+  // Only concentration effects can be augmented to last without it.
+  ability.augments = [...(opts.augments ?? []), ...(ability.duration[2] ? [NO_CONC] : [])];
+  return ability;
+};
+
 export const SPHERES_B = [
   {
     key: "fate", name: "Fate",
@@ -250,7 +258,7 @@ export const SPHERES_B = [
     summary: "Command earth, fire, water, air, metal and plants through geomancy and spirit.",
     abilities: [
       { key: "geomancy", name: "Geomancy", type: "utility", activation: "action", range: 30, duration: [1, "minute", true],
-        summary: "Use one geomancy ability from your packages (air, earth, fire, metal, plant or water).",
+        summary: "Use a geomancy talent. Each package you have also adds its own geomancy abilities (listed under the package).",
         groups: { geomancy: "Geomancy talent" }, augments: [NO_CONC] },
       { key: "spirit", name: "Spirit", type: "utility", activation: "action", range: "self", duration: [10, "minute", true],
         summary: "Gain one spirit ability.",
@@ -258,12 +266,60 @@ export const SPHERES_B = [
         augments: [{ key: "bonus", label: "Cast as a bonus action", cost: 1 }, NO_CONC] }
     ],
     talents: [
-      ["Air Package", "package", 0, "Breeze, Gust of Wind and Purify Air geomancy."],
-      ["Earth Package", "package", 0, "Bury, Sandblast and Tremor geomancy."],
-      ["Fire Package", "package", 0, "Affect Fire, Move Fire and Quick Light geomancy."],
-      ["Metal Package", "package", 0, "Magnetize, Recover Ore and Reforge geomancy."],
-      ["Plant Package", "package", 0, "Entangle, Harvest and Pummel geomancy."],
-      ["Water Package", "package", 0, "Fog, Freeze and Vortex geomancy."],
+      ["Air Package", "package", 0, "Grants the Breeze, Gust of Wind and Purify Air geomancy abilities.", { abilities: [
+        GEO("breeze", "Breeze", { summary: "A light wind gives a creature or object advantage on Constitution saves against heat and on saves against gases and vapors." }),
+        GEO("gust", "Gust of Wind", { type: "save", save: "str", template: ["line", 30],
+          summary: "A 10 ft wide wind disperses gases and puts out small flames; augments push creatures (Strength save).",
+          augments: [{ key: "push", label: "Push creatures", cost: 1 }, { key: "dispel", label: "Disperse magical gases", cost: 1 },
+            { key: "large", label: "Affect larger targets", cost: 1 }] }),
+        GEO("purify", "Purify Air", { template: ["cube", 10],
+          summary: "Turns polluted or toxic air in a 10 ft cube breathable (magical toxins need a spellcasting check).",
+          augments: [{ key: "area", label: "Double the area", cost: 1 }] })
+      ] }],
+      ["Earth Package", "package", 0, "Grants the Bury, Sandblast and Tremor geomancy abilities.", { abilities: [
+        GEO("bury", "Bury", { type: "save", save: "str", cost: 1, template: ["cube", 10],
+          summary: "Sand or earth in a 10 ft square becomes difficult terrain; creatures that fail a Strength save sink and are restrained, sinking deeper on later failures." }),
+        GEO("sandblast", "Sandblast", { type: "save", save: "dex", template: ["cube", 10], duration: [0, "inst", false],
+          summary: "A cloud of sand in a 10 ft square blinds creatures that fail a Dexterity save until your next turn." }),
+        GEO("tremor", "Tremor", { type: "save", save: "dex", cost: 1, template: ["cube", 10], duration: [0, "inst", false],
+          summary: "The ground heaves in a 10 ft square (larger at higher levels); creatures that fail a Dexterity save fall prone." })
+      ] }],
+      ["Fire Package", "package", 0, "Grants the Affect Fire, Move Fire and Quick Light geomancy abilities.", { abilities: [
+        GEO("affectFire", "Affect Fire", { summary: "Grow, shrink or put out a fire (up to a 5 ft cube, larger at higher levels)." }),
+        GEO("moveFire", "Move Fire", { type: "save", save: "dex", damage: { key: "moveFire", types: ["fire"] },
+          summary: "Move a fire, which burns without fuel; creatures in its path take 1d8 fire damage (up to 4d8 at 17th level, Dexterity save)." }),
+        GEO("quickLight", "Quick Light", { activation: "bonus", duration: [0, "inst", false],
+          summary: "Ignite a Tiny or Small flammable object, even if wet (Dexterity save for attended objects)." })
+      ] }],
+      ["Metal Package", "package", 0, "Grants the Magnetize, Recover Ore and Reforge geomancy abilities.", { abilities: [
+        GEO("magnetize", "Magnetize", { type: "attack", duration: [0, "inst", false], damage: { key: "magnetize", types: ["bludgeoning", "piercing", "slashing"] },
+          summary: "Hurl a metal object with a ranged spell attack; damage depends on the object (weapons use their own damage)." }),
+        GEO("recoverOre", "Recover Ore", { cost: 1, template: ["cube", 10], duration: [0, "inst", false],
+          summary: "Pull metal ore from dirt or sand in a 10 ft cube, from Tiny to Gargantuan; it crumbles after 8 hours.",
+          augments: [{ key: "resilient", label: "Resilient metal", cost: 1 }, { key: "size", label: "Larger ore", cost: 1 }] }),
+        GEO("reforge", "Reforge", { cost: 1, duration: [1, "minute", false],
+          summary: "Reshape a metal object into a different form without complex moving parts (1 minute for magic items)." })
+      ] }],
+      ["Plant Package", "package", 0, "Grants the Entangle, Harvest and Pummel geomancy abilities.", { abilities: [
+        GEO("entangle", "Entangle", { type: "save", save: "str", template: ["cube", 10],
+          summary: "Plants in a 10 ft square become difficult terrain and restrain creatures that fail a Strength save." }),
+        GEO("harvest", "Harvest", { cost: 1, duration: [0, "inst", false],
+          summary: "A plant produces a day of food for three Medium creatures or one Large creature (more plants at higher levels)." }),
+        GEO("pummel", "Pummel", { type: "attack", damage: { key: "pummel", types: ["bludgeoning"] },
+          summary: "Animate a branch or tree to slam a creature: 1d12 bludgeoning (up to 4d12 at 17th level).",
+          augments: [{ key: "bonus", label: "Add your key ability modifier to damage", cost: 1 },
+            { key: "ranged", label: "Ranged slams", cost: 1 }, { key: "challenge", label: "Challenge the target", cost: 1 }] })
+      ] }],
+      ["Water Package", "package", 0, "Grants the Fog, Freeze and Vortex geomancy abilities.", { abilities: [
+        GEO("fog", "Fog", { template: ["radius", 10],
+          summary: "A 10 ft radius of fog (larger at higher levels) heavily obscures the area until a moderate wind disperses it." }),
+        GEO("freeze", "Freeze", { type: "save", save: "dex", duration: [0, "inst", false], damage: { key: "freeze", types: ["cold"] },
+          summary: "Flash-freeze water in a 10 ft square or around one creature; creatures that fail a Dexterity save are restrained in ice and take 1d4 cold each round.",
+          augments: [{ key: "hold", label: "Restrained even on a successful save", cost: 2 }] }),
+        GEO("vortex", "Vortex", { type: "save", save: "str", template: ["cube", 10], damage: { key: "vortex", types: ["bludgeoning"] },
+          summary: "A spinning vortex in a 10 ft cube pulls creatures in, dealing 1d8 bludgeoning (up to 4d8 at 17th level) and restraining them (Strength save).",
+          augments: [{ key: "steer", label: "Steer the vortex", cost: 1 }] })
+      ] }],
       ["Air Mastery", "geomancy", 0, "Gust becomes a cone; gain Absorbing Inhalation and Feather Fall."],
       ["Create Nature", "geomancy", 0, "Create elemental material in 10 to 25 ft cubes.", { cost: 1 }],
       ["Destroy Elements", "geomancy", 0, "Steal breath, shatter, extinguish, oxidize, decompose or dehydrate."],
@@ -308,6 +364,7 @@ export const SPHERES_B = [
   {
     key: "protection", name: "Protection",
     summary: "Shield allies with aegises and wards.",
+    grants: ["Armored", "Barrier"],
     abilities: [
       { key: "aegis", name: "Aegis", type: "utility", activation: "action", range: "touch", save: "wis", duration: [1, "hour", true],
         summary: "Grant a creature a protective aegis. Armored aegis sets its AC to your sphere DC (no Dexterity).",
@@ -321,6 +378,8 @@ export const SPHERES_B = [
         groups: { succor: "Succor" } }
     ],
     talents: [
+      ["Armored", "aegis", 0, "The target's AC becomes your sphere DC (without its Dexterity modifier).", { builtIn: true }],
+      ["Barrier", "ward", 0, "A transparent wall that blocks physical attacks and movement but not teleportation (AC = sphere DC, 4 + your level hit points).", { builtIn: true }],
       ["Breathless", "aegis", 0, "No need to breathe; resist inhaled poisons."],
       ["Bulwark", "succor", 0, "Resistance to all damage from the triggering attack."],
       ["Clarity", "ward", 0, "Suppress illusions and concealment inside."],
@@ -446,23 +505,61 @@ export const SPHERES_B = [
   },
   {
     key: "universal", name: "Universal",
-    summary: "Magic that works across spheres: dispelling, mana, metamagic, spellcrafting and wild magic. Choose a package when you gain it.",
-    abilities: [
-      { key: "dispel", name: "Dispel", type: "utility", activation: "minute", activationValue: 10, range: 30, duration: [0, "inst", false],
-        summary: "Dispel package: end magical effects with a check based on your proficiency bonus or spellcasting." },
-      { key: "manabond", name: "Manabond", type: "attack", activation: "bonus", range: 30, duration: [10, "minute", true],
-        summary: "Mana package: a ranged spell attack forms a magical link with a creature, letting you apply manabond talents each turn.",
-        groups: { manabond: "Manabond" } },
-      { key: "chaosAura", name: "Chaos Aura", type: "utility", activation: "action", range: "self", template: ["radius", 5],
-        duration: [1, "minute", true],
-        summary: "Wild magic package: creatures within 5 ft have +50% chance of wild magic." }
-    ],
+    summary: "Magic that works across spheres: dispelling, mana, metamagic, spellcrafting and wild magic. Choose a package when you gain it; each package brings its own ability or talent.",
+    abilities: [],
     talents: [
-      ["Dispel Package", "package", 0, "Gain the Dispel ability."],
-      ["Mana Package", "package", 0, "Gain the Manabond ability."],
-      ["Metasphere Package", "package", 0, "Gain druidcraft, prestidigitation and thaumaturgy plus one metasphere talent."],
-      ["Spellcrafting Package", "package", 0, "Gain a dual sphere talent (requires two magic spheres)."],
-      ["Wild Magic Package", "package", 0, "Gain the Chaos Aura ability."],
+      ["Dispel Package", "package", 0, "Grants the Dispel ability.", { abilities: [
+        { key: "dispel", name: "Dispel", type: "utility", activation: "minute", activationValue: 10, range: 30, duration: [0, "inst", false],
+          summary: "End magical effects with a check based on your proficiency bonus or spellcasting.",
+          groups: { dispel: "Dispel talent" }, multi: ["dispel"] }
+      ] }],
+      ["Mana Package", "package", 0, "Grants the Manabond ability.", { abilities: [
+        { key: "manabond", name: "Manabond", type: "attack", activation: "bonus", range: 30, duration: [10, "minute", true],
+          summary: "A ranged spell attack forms a magical link with a creature, letting you apply manabond talents each turn.",
+          groups: { manabond: "Manabond" } }
+      ] }],
+      ["Metasphere Package", "package", 0, "Grants the druidcraft, prestidigitation and thaumaturgy cantrips (using your key ability) and one metasphere talent.",
+        { freePicks: [{ categories: ["metasphere"], count: 1 }] }],
+      ["Spellcrafting Package", "package", 0, "Grants one dual sphere talent (requires two magic spheres).",
+        { freePicks: [{ categories: ["dualSphere"], count: 1, note: "You need both spheres the dual sphere talent combines." }] }],
+      ["Wild Magic Package", "package", 0, "Grants the Chaos Aura ability.", { abilities: [
+        { key: "chaosAura", name: "Chaos Aura", type: "utility", activation: "action", range: "self", template: ["radius", 5],
+          duration: [1, "minute", true],
+          summary: "Creatures within 5 ft have a +50% chance of wild magic.", augments: [NO_CONC] }
+      ] }],
+      ["Alloy Enhancement", "dualSphere", 0, "Enhancement + Nature (metal): as a bonus action, enhance a metal object you created with geomancy."],
+      ["Alloy Telekinesis", "dualSphere", 0, "Nature (metal) + Telekinesis: as a bonus action, move a metal geomancy object with telekinesis as one effect."],
+      ["Aurora", "dualSphere", 0, "Light + Weather: as a bonus action, raise the light level one step in severe weather."],
+      ["Backdoor Control", "dualSphere", 0, "Enhancement + Mind: charms against creatures you gave intelligence treat requests as more reasonable."],
+      ["Baleful Storm", "dualSphere", 0, "Death + Weather: in a severe storm, reanimate corpses as a bonus action at no cost."],
+      ["Bioluminescent Transformation", "dualSphere", 0, "Alteration + Light: a shapeshifted target also glows, as one concentration effect."],
+      ["Coalescence", "dualSphere", 0, "Death + Life: after a ghost strike, cast cure, restore or invigorate as a bonus action."],
+      ["Corpse Explosion", "dualSphere", 0, "Death + Destruction: a corpse bomb uses your destructive blast (Dexterity save for half)."],
+      ["Destructive Companion", "dualSphere", 0, "Conjuration + Destruction: an exploding companion deals blast damage with d8s and your blast type."],
+      ["Destructive Radiance", "dualSphere", 0, "Destruction + Light: light-type blasts pass through transparent solids."],
+      ["Dimensional Aegis", "dualSphere", 0, "Protection + Warp: sacrifice an aegis to swap places with its bearer before an attack lands."],
+      ["Enhanced Creation", "dualSphere", 0, "Creation + Enhancement: as a bonus action, enhance an object right after creating it."],
+      ["Enhancing Telekinesis", "dualSphere", 0, "Enhancement + Telekinesis: as a bonus action, enhance an object you move with telekinesis."],
+      ["Forceful Creation", "dualSphere", 0, "Creation + Telekinesis: as a bonus action, move a created object with telekinesis."],
+      ["Hypnotic Darkness", "dualSphere", 0, "Dark + Mind: creatures in your darkness have disadvantage on saves against charm, fear and confusion."],
+      ["Life-Saving Evacuation", "dualSphere", 0, "Life + Warp: after teleporting a creature, cast cure, restore or invigorate as a bonus action."],
+      ["Luminous Aegis", "dualSphere", 0, "Light + Protection: as a bonus action, make an ally with your aegis glow."],
+      ["Luminous Flame", "dualSphere", 0, "Light + Nature (fire): fire geomancy also glows, as one concentration effect."],
+      ["Might of the Grave", "dualSphere", 0, "Death + Enhancement: as a bonus action, enhance a reanimated undead."],
+      ["Misleading Teleport", "dualSphere", 0, "Illusion + Warp: as a reaction, use an illusion talent while teleporting."],
+      ["One-Way Window", "dualSphere", 0, "Dark + Light: allies in your darkness can see through it with a glow or lens."],
+      ["Precogniscient Protection", "dualSphere", 0, "Divination + Protection: after granting a sense, add an aegis as a bonus action."],
+      ["Seeking Blast", "dualSphere", 0, "Destruction + Divination: destructive blasts ignore half and three-quarters cover."],
+      ["Shadow Cage", "dualSphere", 0, "Dark + Protection: as a bonus action, fill a ward with darkness."],
+      ["Stack The Deck", "dualSphere", 0, "Divination + Fate: after divining, add a consecration, motif or word as a bonus action."],
+      ["Stasis Storage", "dualSphere", 0, "Time + Warp: lock extradimensional storage in stasis so its contents do not age."],
+      ["Swift Demise", "dualSphere", 0, "Death + Time: as a bonus action, alter time on a reanimated undead."],
+      ["Sylvan Necromancy", "dualSphere", 0, "Death + Nature (plant): use bones for plant geomancy and reanimate dead plants."],
+      ["Transform Object", "dualSphere", 0, "Alteration + Enhancement: as a bonus action, shapeshift an animated object."],
+      ["Twilight Adept", "dualSphere", 0, "Dark + Light: your darkness and light can overlap as dim light."],
+      ["Twisted Reanimation", "dualSphere", 0, "Alteration + Death: as a bonus action, shapeshift a reanimated undead."],
+      ["Vudu", "dualSphere", 0, "Death + Illusion: reanimated undead look as they did in life."],
+      ["Warded Bones", "dualSphere", 0, "Death + Protection: as a bonus action, give a reanimated undead an aegis."],
       ["Disorient", "dispel", 0, "A failed counter leaves the caster disoriented."],
       ["Fool's Counterspell", "dispel", 0, "A countered caster thinks the spell worked."],
       ["Greater Dispel", "dispel", 0, "Dispel any number of effects."],
