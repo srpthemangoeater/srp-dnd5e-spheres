@@ -13,17 +13,18 @@
             {{#each root.packages}}
             <li class="cast-package {{#if selected}}selected{{/if}}">
                 <label class="check package-name">
-                    <input type="radio" name="package" value="{{ id }}" {{#if selected}}checked{{/if}}>
+                    <input type="radio" name="package" value="{{ key }}" {{#if selected}}checked{{/if}}>
                     <span class="name">{{ name }}</span>
-                    <span class="count">{{ abilities.length }}</span>
+                    <span class="count">{{ count }}</span>
+                    {{#if borrowed}}<span class="borrowed" data-tooltip="{{ localize "DND5E-SPHERES.Cast.BorrowedHint" }}">{{ localize "DND5E-SPHERES.Cast.Borrowed" }}</span>{{/if}}
                 </label>
                 {{#if selected}}
                 <ul class="cast-abilities">
                     {{#each abilities}}
-                    <li class="cast-ability {{#if selected}}selected{{/if}}">
+                    <li class="cast-ability {{#if selected}}selected{{/if}} {{#if disabled}}disabled{{/if}}" {{#if disabled}}data-tooltip="{{ summary }}"{{/if}}>
                         <label class="check">
-                            <input type="radio" name="packageAbility" value="{{ ../id }}.{{ id }}" {{#if selected}}checked{{/if}}>
-                            <span class="name">{{ name }}</span>
+                            <input type="radio" name="packageAbility" value="{{ value }}" {{#if selected}}checked{{/if}} {{#if disabled}}disabled{{/if}}>
+                            <span class="name">{{ name }}{{#if source}} <span class="source">{{ source }}</span>{{/if}}</span>
                             {{#if damage}}<span class="formula">{{ damage }}</span>{{/if}}
                             <span class="badge cost">{{ cost }} SP</span>
                         </label>
@@ -42,6 +43,7 @@
     <p class="cast-description">{{ description }}</p>
     {{#if info}}<div class="ability-info">{{ info }}</div>{{/if}}
     {{/if}}
+    {{#if area}}<div class="cast-area"><i class="fas fa-draw-polygon" inert></i> {{ localize "DND5E-SPHERES.Cast.Area" area=area }}</div>{{/if}}
 
     <div class="cast-stats">
         <span>{{ localize "DND5E-SPHERES.SphereDC" }} <b>{{ dc }}</b></span>

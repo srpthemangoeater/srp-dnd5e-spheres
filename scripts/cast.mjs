@@ -1,13 +1,26 @@
 import { categoryLabel } from "../src/categories.mjs";
+import { SPHERES_B } from "../src/spheres-b.mjs";
 import { cardFlags, postCastPreview } from "./chat.mjs";
 import { MODULE_ID, SP_TARGET, SPHERE_NAMES, TEMPLATES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
-import { computeSpheres, defaultEffects, getSpellPointsItem, isFeatureType, itemFlags, spellPointState, tierDice } from "./spell-points.mjs";
+import { casterLevel, computeSpheres, defaultEffects, getSpellPointsItem, isFeatureType, itemFlags, spellPointState, tierDice } from "./spell-points.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /** Activities currently being used through the cast dialog, so the usage hook lets them through. */
 const CASTING = new Set();
+
+/** Area templates chosen in the cast dialog (blast shapes, shape augments), applied when the activity is used. */
+const PENDING_TEMPLATES = new Map();
+
+/** Every spirit ability by package, with the (spirit) talent that grants it, to show what each package offers. */
+const SPIRIT_CATALOG = (SPHERES_B.find(s => s.key === "nature")?.talents ?? []).flatMap(([talent, category, , , extra]) =>
+  (category === "spirit") ? (extra?.abilities ?? []).map(a => ({ talent, name: a.name, cost: a.cost ?? 0, package: a.package ?? null,
+    summary: a.summary })) : []);
+
+/** Nature packages in display order. */
+const NATURE_PACKAGES = ["Air Package", "Earth Package", "Fire Package", "Metal Package", "Plant Package", "Water Package"];
+const GENERAL = "general";
 const castKey = activity => `${activity.actor?.id}.${activity.item?.id}.${activity.id}`;
 
 /** Sphere ability metadata for an activity, or null if it is not a sphere ability. */
@@ -31,6 +44,13 @@ const fullText = html => {
 /** A section of an item description: the paragraph that follows `<h3>name</h3>`. */
 const sectionText = (item, name) => plainText(item?.system.description?.value?.split(`<h3>${name}</h3>`)[1] ?? "");
 
+/** Readable area for a template tuple [type, size, width, height]. */
+const areaLabel = ([type, size, width, height]) => {
+  const label = CONFIG.DND5E.areaTargetTypes[type]?.label ?? type;
+  const extra = [width && (type !== "cone") ? `${width} ft ${type === "wall" ? "thick" : "wide"}` : null, height ? `${height} ft high` : null].filter(_ => _);
+  return `${size} ft ${game.i18n.localize(label).toLowerCase()}${extra.length ? ` (${extra.join(", ")})` : ""}`;
+};
+
 /** Short rules line for an activity: action, range, duration and save or attack. */
 const activityInfo = activity => {
   if ( !activity ) return "";
@@ -49,8 +69,9 @@ const activityInfo = activity => {
  * Configure and cast a sphere ability: choose talents and augments, check the spell point cost against the
  * proficiency cap and the pool, then use the dnd5e activity with the cost as its consumption scaling.
  *
- * Package roots (Nature's Geomancy, Universal's Package Ability) are cast in steps: choose one of the actor's
- * packages, then one of that package's abilities, with the package's talents applying as modifiers.
+ * Package roots are cast in steps: choose one of the actor's packages, then one of its abilities, with the package's
+ * talents applying as modifiers. Geomancy and Universal's Package Ability list each package's own abilities; Spirit
+ * lists the spirit abilities the actor's (spirit) talents grant for each package, and shows the ones still missing.
  */
 export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(activity, options={}) {
@@ -76,10 +97,11 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   static PARTS = { form: { template: TEMPLATES.cast } };
 
   /**
-   * Selected options: `pkg` and `sub` are the chosen package item and its activity (package roots only),
-   * `groups[key]` is a talent id (or a Set for multi-select groups), `augments` holds keys.
+   * Selected options. Package roots only: `pkg` is the chosen package (an item id, or a package name for Spirit),
+   * `subItem` and `sub` the item and activity of the chosen ability. `groups[key]` is a talent id (or a Set for
+   * multi-select groups), `augments` holds keys.
    */
-  #state = { pkg: "", sub: "", groups: {}, augments: new Set() };
+  #state = { pkg: "", subItem: "", sub: "", groups: {}, augments: new Set() };
 
   /** @override */
   get title() {
@@ -92,29 +114,85 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     return itemFlags(this.item).sphere ?? this.item.system.identifier;
   }
 
-  /** Is this a package root, cast by choosing a package and then one of its abilities? */
-  get isRoot() {
-    return !!this.meta.packages;
+  /** How a package root lists abilities: "package" (each package's own) or "spirit" (from spirit talents). */
+  get rootMode() {
+    const mode = this.meta.packages;
+    return mode === true ? "package" : (mode || null);
   }
 
-  /** The actor's packages for this sphere that grant abilities. */
-  get packages() {
+  /** Is this a package root, cast by choosing a package and then one of its abilities? */
+  get isRoot() {
+    return !!this.rootMode;
+  }
+
+  /** The actor's package items for this sphere. */
+  #packageItems(withAbilities) {
     return this.actor.items.filter(i => isFeatureType(i, "talent") && (itemFlags(i).sphere === this.sphereKey)
-      && (itemFlags(i).category === "package") && Object.values(itemFlags(i).abilities ?? {}).some(m => !m.hidden))
+      && (itemFlags(i).category === "package")
+      && (!withAbilities || Object.values(itemFlags(i).abilities ?? {}).some(m => !m.hidden)))
       .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
   }
 
-  /** The chosen package and package ability, when casting from a root. */
-  get package() {
-    return this.isRoot ? (this.actor.items.get(this.#state.pkg) ?? null) : null;
+  /** The actor's (spirit) talents. */
+  get #spiritTalents() {
+    return this.actor.items.filter(i => isFeatureType(i, "talent") && (itemFlags(i).sphere === this.sphereKey)
+      && (itemFlags(i).category === "spirit"));
+  }
+
+  /**
+   * The packages to choose from, as { key, name }. For Spirit these are the actor's Nature packages (all of them with
+   * Master of Elements), plus General for spirit abilities any package can use.
+   */
+  get packages() {
+    if ( this.rootMode !== "spirit" ) return this.#packageItems(true).map(i => ({ key: i.id, name: i.name }));
+    const owned = this.#packageItems(false).map(i => i.name);
+    const master = this.actor.items.some(i => isFeatureType(i, "talent") && (i.name === "Master of Elements"));
+    const names = master ? NATURE_PACKAGES : NATURE_PACKAGES.filter(n => owned.includes(n));
+    const list = names.map(name => ({ key: name, name, borrowed: !owned.includes(name) }));
+    if ( this.#spiritAbilities(GENERAL).length ) {
+      list.push({ key: GENERAL, name: game.i18n.localize("DND5E-SPHERES.Cast.GeneralSpirit") });
+    }
+    return list;
+  }
+
+  /** Name of the chosen package (null for none or General). */
+  get packageName() {
+    if ( !this.isRoot || !this.#state.pkg || (this.#state.pkg === GENERAL) ) return null;
+    return this.rootMode === "spirit" ? this.#state.pkg : (this.actor.items.get(this.#state.pkg)?.name ?? null);
+  }
+
+  /** The item that holds the chosen ability (a package, or a spirit talent). */
+  get subItem() {
+    return this.isRoot ? (this.actor.items.get(this.#state.subItem) ?? null) : null;
   }
 
   get subMeta() {
-    return itemFlags(this.package).abilities?.[this.#state.sub] ?? null;
+    return itemFlags(this.subItem).abilities?.[this.#state.sub] ?? null;
   }
 
   get subActivity() {
-    return this.subMeta ? this.package.system.activities.get(this.#state.sub) : null;
+    return this.subMeta ? this.subItem.system.activities.get(this.#state.sub) : null;
+  }
+
+  /**
+   * Abilities offered under a package key: [{ item, id, meta }] the actor can cast, plus (for Spirit) the ones a
+   * (spirit) talent the actor lacks would grant, as [{ missing: talentName, name, cost, summary }].
+   */
+  #spiritAbilities(key, { missing=false }={}) {
+    const pkg = key === GENERAL ? null : key;
+    const owned = this.#spiritTalents.flatMap(item => Object.entries(itemFlags(item).abilities ?? {})
+      .filter(([, m]) => !m.hidden && ((m.package ?? null) === pkg)).map(([id, meta]) => ({ item, id, meta })));
+    if ( !missing || !pkg ) return owned;
+    const have = new Set(this.#spiritTalents.map(t => t.name));
+    return owned.concat(SPIRIT_CATALOG.filter(a => (a.package === pkg) && !have.has(a.talent))
+      .map(a => ({ missing: a.talent, name: a.name, cost: a.cost, summary: a.summary })));
+  }
+
+  /** The castable abilities under a package key, as [{ item, id, meta }]. */
+  #abilitiesUnder(key) {
+    if ( this.rootMode === "spirit" ) return this.#spiritAbilities(key);
+    const item = this.actor.items.get(key);
+    return Object.entries(itemFlags(item).abilities ?? {}).filter(([, m]) => !m.hidden).map(([id, meta]) => ({ item, id, meta }));
   }
 
   /** The ability actually cast: the chosen package ability, or this ability itself. */
@@ -122,14 +200,21 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     return this.subMeta ?? this.meta;
   }
 
-  /** A package ability opened directly (from its package row) is shown under its root when the actor has one. */
+  /**
+   * A package or spirit ability opened directly (from its talent row) is shown under its root (Geomancy, Spirit,
+   * Package Ability) with it already chosen, when the actor has that root.
+   */
   #openFromPackage() {
-    if ( this.isRoot || (itemFlags(this.item).category !== "package") ) return;
+    const category = itemFlags(this.item).category;
+    if ( this.isRoot || !["package", "spirit"].includes(category) ) return;
+    const mode = category === "spirit" ? "spirit" : "package";
     const sphere = this.actor.items.find(i => isFeatureType(i, "sphere") && (itemFlags(i).sphere === itemFlags(this.item).sphere));
-    const rootId = Object.entries(itemFlags(sphere).abilities ?? {}).find(([, m]) => m.packages)?.[0];
+    const rootId = Object.entries(itemFlags(sphere).abilities ?? {})
+      .find(([, m]) => (m.packages === true ? "package" : m.packages) === mode)?.[0];
     const root = sphere?.system.activities.get(rootId);
     if ( !root ) return;
-    this.#state.pkg = this.item.id;
+    this.#state.pkg = mode === "spirit" ? (this.meta.package ?? GENERAL) : this.item.id;
+    this.#state.subItem = this.item.id;
     this.#state.sub = this.activity.id;
     this.activity = root;
     this.item = sphere;
@@ -156,7 +241,7 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   #fitsPackage(talent) {
     const packages = itemFlags(talent).packages;
     if ( !packages?.length || !this.isRoot ) return true;
-    return !!this.package && packages.includes(this.package.name);
+    return !!this.packageName && packages.includes(this.packageName);
   }
 
   /** Current selection of a group, set up on first use (blast types preselect the first option). */
@@ -189,10 +274,15 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const hasTalent = name => actor.items.some(i => i.name === name && isFeatureType(i, "talent"));
     const castKeys = [this.meta.key, cast.key];
+    const chosenTalents = groups.flatMap(g => g.options.filter(o => o.selected)).map(o => actor.items.get(o.id));
     const augments = (this.isRoot && !this.subMeta) ? [] : [
       ...(cast.augments ?? []).filter(a => !a.talent || hasTalent(a.talent)).map(a => ({
-        key: `base.${a.key}`, label: a.label, cost: a.cost
+        key: `base.${a.key}`, label: a.label, cost: a.cost, template: a.template ?? null
       })),
+      // Area options of the chosen blast shape (e.g. Sculpt as a cone or a line).
+      ...chosenTalents.flatMap(t => (itemFlags(t).shapeOptions ?? []).filter(o => !o.talent || hasTalent(o.talent)).map(o => ({
+        key: `shape.${o.key}`, label: o.label, cost: o.cost, template: o.template, shape: t.name
+      }))),
       ...talents.filter(t => {
         const f = itemFlags(t);
         if ( (f.cost === undefined) || groupKeys.includes(f.category) || !this.#fitsPackage(t) ) return false;
@@ -212,8 +302,12 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     const noPool = (total > 0) && !pool.item;
     const overPool = !!pool.item && (total > pool.value);
     const needsChoice = this.isRoot && !this.subMeta;
+    // The area: a chosen augment's shape, else the chosen talent's (blast shape), else the ability's own.
+    const template = selectedAugments.findLast(a => a.template)?.template
+      ?? chosenTalents.map(t => itemFlags(t).template).find(_ => _) ?? null;
     return {
-      groups, augments, total, cap: data.cap, pool, overCap, noPool, overPool, needsChoice,
+      groups, augments, total, cap: data.cap, pool, overCap, noPool, overPool, needsChoice, template,
+      area: template ? areaLabel(template) : null,
       canCast: !overCap && !noPool && !overPool && !needsChoice,
       selectedTalents: selectedTalents.map(o => actor.items.get(o.id)),
       selectedAugments
@@ -223,16 +317,24 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   /** The package tree of a root: each package with its abilities, the chosen ones marked. */
   #packageTree() {
     return this.packages.map(pkg => {
-      const selected = pkg.id === this.#state.pkg;
-      const abilities = Object.entries(itemFlags(pkg).abilities ?? {}).filter(([, m]) => !m.hidden).map(([id, m]) => {
-        const activity = pkg.system.activities.get(id);
+      const selected = pkg.key === this.#state.pkg;
+      const list = this.rootMode === "spirit" ? this.#spiritAbilities(pkg.key, { missing: true }) : this.#abilitiesUnder(pkg.key);
+      const abilities = list.map(entry => {
+        if ( entry.missing ) return {
+          value: "", name: entry.name, cost: entry.cost, summary: entry.summary, disabled: true,
+          info: game.i18n.format("DND5E-SPHERES.Cast.NeedsTalent", { talent: entry.missing })
+        };
+        const { item, id, meta } = entry;
         return {
-          id, name: m.name, cost: m.cost ?? 0, info: activityInfo(activity), summary: sectionText(pkg, m.name),
-          damage: m.fx ? this.#previewFormula(m) : null,
-          selected: selected && (id === this.#state.sub)
+          value: `${pkg.key}|${item.id}|${id}`, name: meta.name, cost: meta.cost ?? 0,
+          info: activityInfo(item.system.activities.get(id)), summary: sectionText(item, meta.name),
+          source: item.id === pkg.key ? null : item.name,
+          damage: meta.fx ? this.#previewFormula(meta) : null,
+          selected: selected && (item.id === this.#state.subItem) && (id === this.#state.sub)
         };
       });
-      return { id: pkg.id, name: pkg.name, selected, abilities };
+      const count = abilities.filter(a => !a.disabled).length;
+      return { key: pkg.key, name: pkg.name, borrowed: pkg.borrowed, selected, abilities, count };
     });
   }
 
@@ -253,7 +355,7 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       root: this.isRoot ? { packages: this.#packageTree(), none: !this.packages.length } : null,
       path: this.#path(),
       info: activityInfo(this.subActivity ?? this.activity),
-      description: sub ? sectionText(this.package, sub.name) : this.#abilitySummary(),
+      description: sub ? sectionText(this.subItem, sub.name) : this.#abilitySummary(),
       dc: data.dc,
       attack: data.attack
     };
@@ -269,12 +371,15 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     const { name, value, checked } = event.target;
     if ( name === "package" || name === "packageAbility" ) {
       // Choosing a package picks its first ability; either change resets talents and augments.
-      const [pkg, sub] = name === "package"
-        ? [value, Object.entries(itemFlags(this.actor.items.get(value)).abilities ?? {}).find(([, m]) => !m.hidden)?.[0] ?? ""]
-        : value.split(".");
-      this.#state.pkg = pkg;
-      this.#state.sub = sub;
-      this.#state.groups = {};
+      let pkg = value;
+      let subItem = "";
+      let sub = "";
+      if ( name === "package" ) {
+        const first = this.#abilitiesUnder(value)[0];
+        if ( first ) [subItem, sub] = [first.item.id, first.id];
+      }
+      else [pkg, subItem, sub] = value.split("|");
+      Object.assign(this.#state, { pkg, subItem, sub, groups: {} });
       this.#state.augments.clear();
     }
     else if ( name?.startsWith("group.") ) {
@@ -290,6 +395,11 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       const key = name.slice(4);
       const defs = this.castMeta.augments ?? [];
       if ( checked ) {
+        // Only one area shape at a time.
+        const area = this.#options().augments;
+        if ( area.find(a => a.key === key)?.template ) {
+          for ( const a of area ) if ( a.template ) this.#state.augments.delete(a.key);
+        }
         this.#state.augments.add(key);
         // Some augments are upgrades of another (powerful charm instead of greater charm).
         const def = defs.find(a => `base.${a.key}` === key);
@@ -309,7 +419,7 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Work out the damage or healing formula and damage type for the chosen options. */
   #effect(opts) {
     const actor = this.actor;
-    const level = actor.system.details?.level ?? 0;
+    const level = casterLevel(actor);
     const data = computeSpheres(actor);
     const rollData = actor.getRollData();
     const talents = opts.selectedTalents.concat(
@@ -373,12 +483,15 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const key = castKey(activity);
     CASTING.add(key);
+    if ( opts.template ) PENDING_TEMPLATES.set(key, opts.template);
     this.#casting = true;
     try {
-      await activity.use({ scaling: opts.total }, { configure: false },
+      const usage = { scaling: opts.total, ...(opts.template ? { create: { measuredTemplate: true } } : {}) };
+      await activity.use(usage, { configure: false },
         { data: { flags: { [MODULE_ID]: cardFlags(this.actor, this.#castData(opts, effect)) } } });
     } finally {
       CASTING.delete(key);
+      PENDING_TEMPLATES.delete(key);
       this.#casting = false;
     }
   }
@@ -386,8 +499,9 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Where the cast ability sits: sphere > ability, or sphere > root > package > package ability. */
   #path() {
     const sphere = SPHERE_NAMES[this.sphereKey] ?? this.item.name;
-    if ( this.subMeta ) return [sphere, this.meta.name, this.package.name, this.subMeta.name];
-    if ( itemFlags(this.item).category === "package" ) return [sphere, this.item.name, this.meta.name];
+    if ( this.subMeta ) return [sphere, this.meta.name,
+      this.packageName ?? game.i18n.localize("DND5E-SPHERES.Cast.GeneralSpirit"), this.subMeta.name];
+    if ( ["package", "spirit"].includes(itemFlags(this.item).category) ) return [sphere, this.item.name, this.meta.name];
     return [sphere, this.meta.name];
   }
 
@@ -406,8 +520,8 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       sphere: this.item.name,
       ability: this.castMeta.name,
       path: this.#path(),
-      info: activityInfo(this.#activityToUse(opts)),
-      summary: sub ? sectionText(this.package, sub.name) : this.#abilitySummary(),
+      info: [activityInfo(this.#activityToUse(opts)), opts.area].filter(_ => _).join(" · "),
+      summary: sub ? sectionText(this.subItem, sub.name) : this.#abilitySummary(),
       talents: details.map(d => d.name),
       augments: augmentDetails.map(a => a.label),
       details,
@@ -456,6 +570,14 @@ function onPreUseActivity(activity) {
  */
 function onPreActivityConsumption(activity) {
   if ( !abilityMeta(activity) || !activity.actor ) return;
+  // The area chosen in the cast dialog replaces the activity's own for this use (prepared data only).
+  const area = PENDING_TEMPLATES.get(castKey(activity));
+  if ( area && activity.target?.template ) {
+    const [type, size, width, height] = area;
+    Object.assign(activity.target.template, { type, size: Number(size), width: width ? Number(width) : null,
+      height: height ? Number(height) : null, count: 1, units: "ft" });
+  }
+
   const pool = getSpellPointsItem(activity.actor);
   if ( !pool ) return;
   for ( const target of activity.consumption?.targets ?? [] ) {

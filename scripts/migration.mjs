@@ -2,7 +2,10 @@ import { MODULE_ID, PACKS } from "./constants.mjs";
 import { isFeatureType, itemFlags } from "./spell-points.mjs";
 
 /** Data version of sphere and talent items. Raise it when their module data changes shape. */
-const DATA_VERSION = "0.5.1";
+const DATA_VERSION = "0.6.0";
+
+/** Module flags that always follow the compendium entry. */
+const SYNCED_FLAGS = ["abilities", "packages", "template", "shapeOptions", "cost"];
 
 export function registerMigrationSetting() {
   game.settings.register(MODULE_ID, "dataVersion", { scope: "world", config: false, type: String, default: "" });
@@ -10,7 +13,8 @@ export function registerMigrationSetting() {
 
 /**
  * Bring sphere and talent items already on actors up to date with the compendiums: ability metadata (such as the
- * Geomancy package root), the packages a talent works with, new activities and the rules text.
+ * Geomancy and Spirit package roots), the packages a talent works with, blast shape areas, new activities and the
+ * rules text.
  * Runs once per data version for the active GM.
  */
 export async function migrateWorld() {
@@ -50,11 +54,12 @@ function itemUpdate(item, sources) {
   const to = itemFlags(item);
   const update = {};
 
-  if ( from.abilities && !foundry.utils.objectsEqual(from.abilities, to.abilities ?? {}) ) {
-    update[`flags.${MODULE_ID}.abilities`] = from.abilities;
-  }
-  if ( from.packages && !foundry.utils.objectsEqual(from.packages, to.packages ?? []) ) {
-    update[`flags.${MODULE_ID}.packages`] = from.packages;
+  for ( const key of SYNCED_FLAGS ) {
+    if ( from[key] === undefined ) {
+      if ( to[key] !== undefined ) update[`flags.${MODULE_ID}.-=${key}`] = null;
+    }
+    // Replace rather than merge, so abilities or options that were removed do not linger.
+    else if ( !foundry.utils.objectsEqual({ v: from[key] }, { v: to[key] }) ) update[`flags.${MODULE_ID}.==${key}`] = from[key];
   }
   for ( const activity of source.system.activities ) {
     if ( !item.system.activities.has(activity.id) ) update[`system.activities.${activity.id}`] = activity.toObject();

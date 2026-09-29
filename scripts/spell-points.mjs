@@ -32,6 +32,19 @@ export function drawbackWeight(item) {
 /** The actor's Spell Points pool item, if any. */
 export const getSpellPointsItem = actor => actor?.items.find(i => itemFlags(i).spellPoints) ?? null;
 
+/**
+ * Level used for spherecasting. Characters use their character level. NPCs use their class levels if they have
+ * any, else a caster level set in the tradition builder, else their spellcaster level, else their CR (at least 1).
+ */
+export function casterLevel(actor) {
+  const level = Number(actor?.system.details?.level) || 0;
+  if ( (actor?.type !== "npc") || level ) return level;
+  const flag = Number(actor.flags?.[MODULE_ID]?.casterLevel) || 0;
+  if ( flag ) return flag;
+  const spellLevel = Number(actor.system.attributes?.spell?.level) || 0;
+  return spellLevel || Math.max(1, Math.floor(Number(actor.system.details?.cr) || 0));
+}
+
 /** Ability modifier, falling back to the raw score if derived data is not ready yet. */
 function abilityMod(actor, key) {
   const ability = actor.system.abilities?.[key];
@@ -46,7 +59,7 @@ function abilityMod(actor, key) {
  */
 export function computeSpheres(actor) {
   const flags = actor.flags?.[MODULE_ID] ?? {};
-  const level = actor.system.details?.level ?? 0;
+  const level = casterLevel(actor);
   const prof = actor.system.attributes?.prof ?? 0;
   const kam = flags.kam || null;
   const kamMod = kam ? abilityMod(actor, kam) : 0;
@@ -117,7 +130,10 @@ export function computeTalents(actor) {
   const paid = all.filter(i => !isFree(i) && !isOverride(i));
   const overrides = all.filter(isOverride).length;
   const total = fromClasses + tradition + bonus;
-  return { fromClasses, tradition, bonus, total, spent: paid.length, overrides, over: paid.length > total, isFree, isOverride };
+  // NPCs without a talent budget (no spherecaster class, tradition or bonus) are not limited.
+  const unlimited = (actor.type === "npc") && (total === 0);
+  return { fromClasses, tradition, bonus, total, unlimited, spent: paid.length, overrides,
+    over: !unlimited && (paid.length > total), isFree, isOverride };
 }
 
 /** Number of damage or healing dice at 1st, 5th, 11th and 17th level. */
@@ -138,7 +154,10 @@ export function defaultEffects(actor, data) {
     pummel: `${tier}d12`,
     vortex: `${tier}d8`,
     freeze: "1d4",
-    magnetize: "1d6"
+    magnetize: "1d6",
+    // Nature spirit.
+    dragonlung: `${tier + 1}d6`,
+    phoenix: `${Math.max(1, Math.floor(level / 2))}d6`
   };
 }
 

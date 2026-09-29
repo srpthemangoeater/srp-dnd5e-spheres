@@ -47,7 +47,6 @@
       "Level": "Requires character level {level}."
     },
     "NoTalentsYet": "No talents for this sphere yet.",
-    "ContextHint": "Right-click a row for more options. Click a row to show its description.",
     "Group": {
       "drawbacks": "Drawbacks",
       "boons": "Boons"
@@ -70,6 +69,7 @@
       "Pending": "Free talents to choose",
       "Badge": "Free pick"
     },
+    "Section": "Spheres",
     "DeleteTitle": "Delete {name}",
     "DeleteConfirm": "Delete <strong>{name}</strong> from this character?",
     "Browser": {
@@ -100,6 +100,7 @@
       "NoResults": "Nothing matches these filters."
     },
     "TalentsUsed": "Magic talents {spent} / {total}",
+    "TalentsKnown": "Magic talents {count}",
     "TalentsHint": "Classes {classes} + tradition {tradition} + bonus {bonus}. Each sphere and talent costs one talent; blast types granted by a sphere you have are free.",
     "TalentsOver": "More spheres and talents are known than magic talents allow.",
     "Advanced": "Advanced",
@@ -122,7 +123,12 @@
       "NoPackages": "This character has no packages with abilities for this sphere yet.",
       "ChoosePackage": "Choose a package and one of its abilities.",
       "Save": "{ability} save",
-      "SpellAttack": "Spell attack"
+      "SpellAttack": "Spell attack",
+      "GeneralSpirit": "Any package",
+      "NeedsTalent": "Needs the {talent} talent",
+      "Borrowed": "Master of Elements",
+      "BorrowedHint": "You count as having this package for (spirit) talents.",
+      "Area": "Area: {area}"
     },
     "FeatureType": {
       "castingTradition": "Casting Tradition",
@@ -147,6 +153,8 @@
       "Unspent": "Left for spell points",
       "BonusAtLevel": "Bonus spell points at level {level}",
       "ClassSP": "Class spell points (manual)",
+      "CasterLevel": "Caster level",
+      "CasterLevelHint": "NPC; 0 uses class levels, spellcaster level or CR",
       "FromClasses": "+{value} from spherecaster classes",
       "ManualBonus": "Other bonus",
       "TalentBonus": "Bonus magic talents",

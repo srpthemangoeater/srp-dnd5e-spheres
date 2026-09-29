@@ -1,5 +1,5 @@
 import { getSetting } from "./settings.mjs";
-import { isFeatureType, itemFlags } from "./spell-points.mjs";
+import { casterLevel, isFeatureType, itemFlags } from "./spell-points.mjs";
 
 /** Drawbacks with numeric effects that Resolve applies. Everything else is acknowledged. */
 const AUTOMATED = {
@@ -39,7 +39,7 @@ export function drawbackRows(actor) {
 
 /** Take 1 damage and lose 1 maximum hit point per spell point (2 each from 11th level) until a long rest. */
 async function drainingCasting(actor, { spent }) {
-  const amount = spent * ((actor.system.details?.level ?? 0) >= 11 ? 2 : 1);
+  const amount = spent * (casterLevel(actor) >= 11 ? 2 : 1);
   const previous = actor.system.attributes.hp.value;
   await actor.update({ "system.attributes.hp.tempmax": (actor.system._source.attributes.hp.tempmax ?? 0) - amount });
   await actor.applyDamage(amount);

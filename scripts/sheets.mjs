@@ -1,5 +1,5 @@
 import { categoryLabel } from "../src/categories.mjs";
-import { MODULE_ID, TEMPLATES } from "./constants.mjs";
+import { FEATURE_TYPES, MODULE_ID, TEMPLATES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { SpheresBrowser } from "./browser.mjs";
 import { CastDialog } from "./cast.mjs";
@@ -299,37 +299,121 @@ export function activateSpheresListeners(actor, element) {
 
 /** Add a Spheres tab to the dnd5e character sheet. Must run during init, after the system registered its sheets. */
 export function registerSheetTab() {
-  const Sheet = dnd5e.applications.actor.CharacterActorSheet;
-  if ( !Sheet.TABS.some(t => t.tab === "spheres") ) {
-    const index = Sheet.TABS.findIndex(t => t.tab === "effects");
-    Sheet.TABS.splice(index === -1 ? Sheet.TABS.length : index, 0,
-      { tab: "spheres", label: "DND5E-SPHERES.Tab", icon: "fas fa-atom" });
-  }
+  const { CharacterActorSheet, NPCActorSheet } = dnd5e.applications.actor;
+  for ( const Sheet of [CharacterActorSheet, NPCActorSheet] ) {
+    if ( !Sheet.TABS.some(t => t.tab === "spheres") ) {
+      const index = Sheet.TABS.findIndex(t => t.tab === "effects");
+      Sheet.TABS.splice(index === -1 ? Sheet.TABS.length : index, 0,
+        { tab: "spheres", label: "DND5E-SPHERES.Tab", icon: "fas fa-atom" });
+    }
 
-  // Insert the part next to the other tab bodies so it shares their container.
-  const parts = {};
-  for ( const [key, part] of Object.entries(Sheet.PARTS) ) {
-    if ( key === "abilityScores" ) parts.spheres = {
-      container: { classes: ["tab-body"], id: "tabs" },
-      template: TEMPLATES.tab,
-      templates: [TEMPLATES.content],
-      scrollable: [""]
+    // Insert the part next to the other tab bodies so it shares their container.
+    const part = {
+      container: { classes: ["tab-body"], id: "tabs" }, template: TEMPLATES.tab, templates: [TEMPLATES.content], scrollable: [""]
     };
-    parts[key] = part;
+    const anchor = "abilityScores" in Sheet.PARTS ? "abilityScores"
+      : Object.keys(Sheet.PARTS).find(k => Sheet.PARTS[k].container?.id === "tabs");
+    const parts = {};
+    for ( const [key, p] of Object.entries(Sheet.PARTS) ) {
+      if ( key === anchor ) parts.spheres = part;
+      parts[key] = p;
+    }
+    parts.spheres ??= part;
+    Sheet.PARTS = parts;
   }
-  parts.spheres ??= { container: { classes: ["tab-body"], id: "tabs" }, template: TEMPLATES.tab, scrollable: [""] };
-  Sheet.PARTS = parts;
 
   Hooks.on("dnd5e.prepareSheetContext", (sheet, partId, context) => {
     if ( partId !== "spheres" ) return;
     context.spheres = buildSpheresContext(sheet.actor, sheet.isEditable && sheet.isEditMode);
   });
 
-  Hooks.on("renderCharacterActorSheet", (sheet, element) => {
-    const actor = sheet.actor;
-    renderHeaderBox(actor, element.querySelector(".sheet-header .left"));
-    activateSpheresListeners(actor, element.querySelector('.tab[data-tab="spheres"]'));
+  for ( const hook of ["renderCharacterActorSheet", "renderNPCActorSheet"] ) {
+    Hooks.on(hook, (sheet, element) => {
+      const actor = sheet.actor;
+      renderHeaderBox(actor, element.querySelector(".sheet-header .left"));
+      activateSpheresListeners(actor, element.querySelector('.tab[data-tab="spheres"]'));
+    });
+  }
+  registerFeatureSections();
+}
+
+/* -------------------------------------------- */
+/*  Features tab: a Spheres section             */
+/* -------------------------------------------- */
+
+/** Items that belong in the Spheres section: traditions, drawbacks, boons, spheres, talents and the spell point pool. */
+export const isSpheresItem = item => (item?.type === "feat")
+  && ((item.system.type?.value in FEATURE_TYPES) || !!itemFlags(item).spellPoints);
+
+const sectionLabel = () => (game.i18n?.has("DND5E-SPHERES.Section") ? game.i18n.localize("DND5E-SPHERES.Section") : "Spheres");
+
+/** Wrap a method, through libWrapper when it is active. */
+function wrap(target, path, fn) {
+  if ( game.modules.get("lib-wrapper")?.active && globalThis.libWrapper ) {
+    libWrapper.register(MODULE_ID, `${target}.${path}`, fn, "WRAPPER");
+    return;
+  }
+  const proto = foundry.utils.getProperty(globalThis, target);
+  const original = proto[path];
+  proto[path] = function(...args) {
+    return fn.call(this, original.bind(this), ...args);
+  };
+}
+
+/**
+ * Group sphere items into their own Spheres section of the Features tab: on the dnd5e character sheet (whichever
+ * grouping is chosen), on the dnd5e NPC sheet, and on Tidy 5e sheets through Tidy's custom section.
+ */
+function registerFeatureSections() {
+  const sheets = "dnd5e.applications.actor";
+
+  wrap(`${sheets}.CharacterActorSheet.prototype`, "_prepareItemFeature", async function(wrapped, item, ctx) {
+    const result = await wrapped(item, ctx);
+    if ( isSpheresItem(item) ) {
+      ctx.groups ??= {};
+      ctx.groups.origin = "spheres";
+      ctx.groups.activation = "spheres";
+    }
+    return result;
   });
+
+  wrap(`${sheets}.CharacterActorSheet.prototype`, "_prepareFeaturesContext", async function(wrapped, context, options) {
+    context = await wrapped(context, options);
+    if ( !this.actor.items.some(isSpheresItem) || context.sections?.some(s => s.id === "spheres") ) return context;
+    const Inventory = customElements.get(this.options.elements.inventory);
+    const columns = Inventory.mapColumns([{ id: "uses", order: 200 }, "recovery", "controls"]);
+    const [section] = Inventory.prepareSections([{
+      columns, id: "spheres", label: sectionLabel(), order: 2500, groups: { origin: "spheres", activation: "spheres" }
+    }]);
+    context.sections = [...context.sections, section].sort((a, b) => a.order - b.order);
+    return context;
+  });
+
+  wrap(`${sheets}.NPCActorSheet.prototype`, "_prepareFeaturesContext", async function(wrapped, context, options) {
+    context = await wrapped(context, options);
+    const items = (context.itemCategories?.features ?? []).filter(isSpheresItem);
+    if ( !items.length ) return context;
+    for ( const section of context.sections ) section.items = section.items.filter(i => !isSpheresItem(i));
+    const Inventory = customElements.get(this.options.elements.inventory);
+    const [section] = Inventory.prepareSections([{
+      id: "spheres", label: sectionLabel(), order: 5000, items, minWidth: 210,
+      columns: ["recovery", "uses", "roll", "formula", "controls"]
+    }]);
+    context.sections = [...context.sections, section].sort((a, b) => a.order - b.order);
+    return context;
+  });
+
+  // Tidy groups items by its section flag. Sphere items without one get it in their prepared data (not saved), so
+  // a section chosen by hand still wins.
+  if ( game.modules.get("tidy5e-sheet")?.active ) {
+    wrap("CONFIG.Item.documentClass.prototype", "prepareDerivedData", function(wrapped, ...args) {
+      const result = wrapped(...args);
+      if ( this.isEmbedded && isSpheresItem(this) && !this._source.flags?.["tidy5e-sheet"]?.section ) {
+        foundry.utils.setProperty(this.flags, "tidy5e-sheet.section", sectionLabel());
+      }
+      return result;
+    });
+  }
 }
 
 /** Spell point summary under the class line in the sheet header. */
@@ -360,7 +444,7 @@ function renderHeaderBox(actor, anchor) {
 /** Register the Spheres tab with Tidy 5e Sheets, reusing the same content template. */
 export function registerTidy(api) {
   const actorOf = context => context?.actor ?? context?.document;
-  api.registerCharacterTab(new api.models.HandlebarsTab({
+  const tab = () => new api.models.HandlebarsTab({
     title: () => game.i18n.localize("DND5E-SPHERES.Tab"),
     tabId: `${MODULE_ID}-spheres`,
     iconClass: "fa-solid fa-atom",
@@ -373,5 +457,7 @@ export function registerTidy(api) {
       return { spheres: buildSpheresContext(actor, actor.isOwner && (unlocked === true)) };
     },
     onRender: params => activateSpheresListeners(actorOf(params.data) ?? params.app.actor, params.tabContentsElement)
-  }));
+  });
+  api.registerCharacterTab(tab());
+  api.registerNpcTab(tab());
 }

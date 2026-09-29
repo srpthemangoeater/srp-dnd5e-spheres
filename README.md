@@ -69,8 +69,13 @@ can be changed later from the row's right-click menu (*Override…*).
 - **Universal packages** carry their ability or pick: Dispel (Dispel), Mana (Manabond), Wild Magic
   (Chaos Aura), Metasphere (one free metasphere talent) and Spellcrafting (one free dual sphere talent).
   Their abilities are cast the same way from Universal's *Package Ability*.
-- Casting a package ability from the package's own row (right-click > *Cast*) opens the same dialog with
-  that package and ability already chosen.
+- **Spirit is nested the same way:** *Spirit* lists your packages; each shows the spirit abilities your (spirit)
+  talents grant for that package (for example Fire: Flame Mantle from Nature's Carapace, Dragonlung (Fire), Resist
+  Fire), plus the ones you could still gain, greyed out with the talent they need. Abilities any package can use
+  (Beast Friend, Speak With Beasts, Natural Ally) are under *Any package*. With Master of Elements every package is
+  listed. Dragonlung deals its package's damage type and can be a 60 ft line instead of a cone.
+- Casting a package or spirit ability from its own row (right-click > *Cast*) opens the same dialog with that
+  package and ability already chosen.
 - Talents a sphere always includes are added automatically for free: Darkvision (Dark), Exhausting Strike
   (Death), Armored and Barrier (Protection).
 
@@ -159,6 +164,10 @@ a summary of the tradition.
   genotype and so on) and augments, see the total spell point cost against your proficiency cap and
   your pool, then cast. The cost is charged to the Spell Points item, so the cap, drawback automation
   and chat card summary all apply.
+- **Blast shapes place their area:** Aura (10 ft around you), Explosive Orb (5 ft cube, or a 20 ft sphere), Leap
+  (10 ft line, or up to 30 ft), Sculpt (5 ft radius, or a 30 ft cone or 120 ft line), Sphere, Wall (5 ft panels, or
+  10 ft), Calamity (30 ft around you, a 90 ft cone or a 500 ft line) and Cloud. Choose the shape, and its area option
+  among the augments; the cast then places a matching template, and the area is shown on the chat card.
 - Destructive Blast damage follows the rules (1d8 per tier, or 1d8 + 1d8 per 2 levels when
   empowered) with the blast type's damage type; Ray and Tether switch to a spell attack.
   Cure, Invigorate and telekinetic Projectile also compute their formulas from the chosen talents.
@@ -173,6 +182,12 @@ a summary of the tradition.
   with its talents and a Cast button per ability. Spell points and sphere DC also show under the class
   line in the header.
 - **Tidy 5e Sheets:** the same *Spheres* tab.
+- **Features tab:** traditions, drawbacks, boons, spheres, talents and the Spell Points item are grouped in their
+  own *Spheres* section, on the dnd5e sheets (in either grouping) and on Tidy 5e (as its custom section, unless you
+  gave an item a section yourself).
+- **NPCs** get the same *Spheres* tab (dnd5e and Tidy NPC sheets), spell points, `@spheres` roll data, casting and
+  chat cards. Their caster level is their class level, else the *Caster level* set in the tradition builder, else
+  their spellcaster level, else their CR. NPCs without spherecaster classes or a tradition have no magic talent limit.
 - Drawbacks, boons and each sphere's talents are collapsible lists: click a row to show its
   description, click a group header to fold it. Open and closed state is remembered per user.
 - Right-click any row for its menu: *Post to chat*, *View*, and in edit mode (or with the Tidy sheet

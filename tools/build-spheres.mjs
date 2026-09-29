@@ -203,8 +203,14 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
   /*  Spheres                                     */
   /* -------------------------------------------- */
 
-  const RANGE = r => r === "touch" ? { units: "touch", value: null } : r === "self" ? { units: "self", value: null }
-    : { units: "ft", value: String(r) };
+  const RANGE = r => ["touch", "self", "any"].includes(r) ? { units: r, value: null } : { units: "ft", value: String(r) };
+
+  /** Template data from [type, size, width, height]. */
+  const TEMPLATE = ([type, size, width, height]) => ({ count: "", contiguous: false, type, size: String(size),
+    ...(width ? { width: String(width) } : {}), ...(height ? { height: String(height) } : {}), units: "ft" });
+  const areaText = ([type, size, width, height]) => type === "radius" ? `${size} ft radius around you`
+    : type === "line" || type === "wall" ? `${size} ft ${type}${width ? ` (${width} ft wide)` : ""}${height ? `, ${height} ft high` : ""}`
+    : `${size} ft ${type}${height ? `, ${height} ft high` : ""}`;
 
   const activityFor = (ownerKey, ability, index) => {
     const _id = docId(`activity.${ownerKey}.${ability.key}`);
@@ -221,8 +227,7 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
       duration: { value: dValue ? String(dValue) : "", units: dUnits, concentration, override: false },
       range: { ...RANGE(ability.range), special: "", override: false },
       target: {
-        template: ability.template
-          ? { count: "", contiguous: false, type: ability.template[0], size: String(ability.template[1]), units: "ft" }
+        template: ability.template ? TEMPLATE(ability.template)
           : { count: "", contiguous: false, type: "", size: "", units: "ft" },
         affects: { count: "", type: "", choice: false, special: "" },
         prompt: !!ability.template, override: false
@@ -263,11 +268,15 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
         key: ability.key, name: ability.name, cost: ability.cost ?? 0, hidden: !!ability.hidden,
         groups: ability.groups ?? {}, multi: ability.multi ?? [], augments: ability.augments ?? [],
         fx: ability.damage?.key ?? ability.heal?.key ?? null,
-        // A package root (Nature Geomancy, Universal): the cast dialog lists the actor's packages and their abilities.
-        ...(ability.packages ? { packages: true } : {})
+        // A package root: "package" lists the actor's packages and their own abilities (Geomancy, Universal),
+        // "spirit" lists packages and the spirit abilities the actor's (spirit) talents grant for each (Spirit).
+        ...(ability.packages ? { packages: ability.packages } : {}),
+        // The Nature package a spirit ability needs.
+        ...(ability.package ? { package: ability.package } : {})
       };
     });
     const html = list.filter(a => !a.hidden).map(a => `<h3>${escape(a.name)}</h3><p>${escape(a.summary)}</p>`
+      + (a.package ? `<p><em>Requires the ${escape(a.package)}.</em></p>` : "")
       + (a.cost ? `<p><strong>Cost:</strong> ${a.cost} spell point${a.cost > 1 ? "s" : ""}.</p>` : "")
       + (a.augments?.length ? `<p><strong>Augments:</strong> ${a.augments.map(x => `${escape(x.label)} (${x.cost} SP)`).join("; ")}.</p>` : "")).join("");
     return { abilities, activities, html };
@@ -327,6 +336,8 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
           + (extra.builtIn ? `<p><em>Included with the ${sphere.name} sphere.</em></p>` : "")
           + (advanced ? "<p><strong>Advanced talent.</strong></p>" : "")
           + (extra.packages ? `<p><strong>Package:</strong> ${extra.packages.map(escape).join(" or ")}.</p>` : "")
+          + (extra.template ? `<p><strong>Area:</strong> ${areaText(extra.template)}${extra.shapeOptions?.length
+            ? `; ${extra.shapeOptions.map(o => `${escape(o.label.toLowerCase())} (${o.cost} SP)`).join(", ")}` : ""}.</p>` : "")
           + picksText(talentPicks, [], "this package")
           + built.html
           + wikiLink(sphere.key, `${sphere.name} sphere`),

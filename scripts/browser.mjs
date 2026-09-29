@@ -1,6 +1,6 @@
 import { categoryLabel } from "../src/categories.mjs";
 import { MODULE_ID, PACKS, SPHERE_NAMES, TEMPLATES } from "./constants.mjs";
-import { computeTalents, isFeatureType, itemFlags } from "./spell-points.mjs";
+import { casterLevel, computeTalents, isFeatureType, itemFlags } from "./spell-points.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -110,7 +110,7 @@ export class SpheresBrowser extends HandlebarsApplicationMixin(ApplicationV2) {
     const talents = computeTalents(this.actor);
     const free = f.builtIn || (f.free && this.actor.items.some(i => isFeatureType(i, "sphere")
       && itemFlags(i).sphere === f.free.toLowerCase()));
-    if ( !free && (talents.spent + 1 > talents.total) ) {
+    if ( !free && !talents.unlimited && (talents.spent + 1 > talents.total) ) {
       problems.push(game.i18n.format("DND5E-SPHERES.Override.OverLimit", { spent: talents.spent + 1, total: talents.total }));
     }
     if ( isFeatureType(doc, "talent") && !this.actor.items.some(i => isFeatureType(i, "sphere") && itemFlags(i).sphere === f.sphere) ) {
@@ -118,7 +118,7 @@ export class SpheresBrowser extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     // Advanced talents state their level requirement in their text, e.g. "(11th level)".
     const level = Number(doc.system.description?.value?.match(/\((\d+)(?:st|nd|rd|th) level/)?.[1]);
-    if ( level && ((this.actor.system.details?.level ?? 0) < level) ) {
+    if ( level && (casterLevel(this.actor) < level) ) {
       problems.push(game.i18n.format("DND5E-SPHERES.Override.Level", { level }));
     }
     return problems;

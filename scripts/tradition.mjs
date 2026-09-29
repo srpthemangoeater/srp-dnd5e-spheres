@@ -66,6 +66,7 @@ export function readTradition(actor) {
     drawbacks,
     boons,
     classSP: Number(flags.classSP) || 0,
+    casterLevel: Number(flags.casterLevel) || 0,
     spBonus: Number(flags.spBonus) || 0,
     talentBonus: Number(flags.talentBonus) || 0,
     setSpellcasting: !!flags.setSpellcasting
@@ -104,6 +105,7 @@ export async function applyTradition(actor, state) {
     [`flags.${MODULE_ID}`]: {
       kam: state.kam || null,
       classSP: Number(state.classSP) || 0,
+      ...(actor.type === "npc" ? { casterLevel: Number(state.casterLevel) || 0 } : {}),
       spBonus: Number(state.spBonus) || 0,
       talentBonus: Number(state.talentBonus) || 0,
       setSpellcasting: !!state.setSpellcasting,

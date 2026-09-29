@@ -2,6 +2,27 @@
 
 const NO_CONC = { key: "noConc", label: "Lasts without concentration", cost: 2 };
 
+const SPIRIT_BONUS = { key: "bonus", label: "Cast as a bonus action", cost: 1 };
+
+/**
+ * A Nature spirit ability granted by a (spirit) talent: an action on yourself that lasts up to 10 minutes with
+ * concentration unless noted. `pkg` is the Nature package it needs (null for abilities any package can use).
+ */
+const SPIRIT = (key, name, pkg, opts={}) => {
+  const ability = { key, name, type: "utility", activation: "action", range: "self", duration: [10, "minute", true],
+    package: pkg ? `${pkg} Package` : null, ...opts };
+  ability.augments = [...(opts.augments ?? []), ...(ability.activation === "action" ? [SPIRIT_BONUS] : []),
+    ...(ability.duration[2] ? [NO_CONC] : [])];
+  return ability;
+};
+
+/** Damage types for Dragonlung and Resist Elements, by package. */
+const ELEMENT_TYPES = { Air: ["thunder"], Earth: ["bludgeoning", "piercing", "slashing"], Fire: ["fire"],
+  Metal: ["lightning"], Plant: ["acid"], Water: ["cold"] };
+const ELEMENT_LABELS = { Air: "Thunder", Earth: "Bludgeoning, Piercing or Slashing", Fire: "Fire", Metal: "Lightning",
+  Plant: "Acid", Water: "Cold" };
+const PACKAGES = ["Air", "Earth", "Fire", "Metal", "Plant", "Water"];
+
 /** A Nature geomancy ability: an action at 30 ft that lasts up to 1 minute with concentration unless noted. */
 const GEO = (key, name, opts) => {
   const ability = { key, name, type: "utility", activation: "action", range: 30, duration: [1, "minute", true], ...opts };
@@ -259,11 +280,10 @@ export const SPHERES_B = [
     abilities: [
       { key: "geomancy", name: "Geomancy", type: "utility", activation: "action", range: 30, duration: [1, "minute", true],
         summary: "Choose one of your packages, then one of its geomancy abilities. Geomancy talents for that package (and general ones) apply as modifiers.",
-        packages: true, groups: { geomancy: "Geomancy talents" }, multi: ["geomancy"], augments: [NO_CONC] },
+        packages: "package", groups: { geomancy: "Geomancy talents" }, multi: ["geomancy"], augments: [NO_CONC] },
       { key: "spirit", name: "Spirit", type: "utility", activation: "action", range: "self", duration: [10, "minute", true],
-        summary: "Gain one spirit ability.",
-        groups: { spirit: "Spirit" },
-        augments: [{ key: "bonus", label: "Cast as a bonus action", cost: 1 }, NO_CONC] }
+        summary: "Choose one of your packages, then one of the spirit abilities your (spirit) talents grant for it.",
+        packages: "spirit" }
     ],
     talents: [
       ["Air Package", "package", 0, "Grants the Breeze, Gust of Wind and Purify Air geomancy abilities.", { abilities: [
@@ -337,27 +357,85 @@ export const SPHERES_B = [
       ["Reforge Mastery", "geomancy", 0, "Chill or heat metal (1d8) and alter weapon edges.", { packages: ["Metal Package"] }],
       ["Thermoturgy", "geomancy", 0, "Ash strikes, boiling water and safe trails through fire.", { packages: ["Fire Package"] }],
       ["Water Mastery", "geomancy", 0, "Snow, cold snaps, moving water and purification.", { packages: ["Water Package"] }],
-      ["Beast Friend", "spirit", 0, "Befriend beasts and call one to you."],
-      ["Dragonlung", "spirit", 0, "A 2d6 breath weapon (recharge 5-6)."],
-      ["Meld with Nature", "spirit", 0, "Step into earth, metal, plants or water."],
-      ["Nature's Carapace", "spirit", 0, "Elemental protection such as stoneskin, barkskin or a flame mantle."],
-      ["Nature's Motion", "spirit", 0, "Walk on air, water or through terrain freely."],
-      ["Nature's Weapon", "spirit", 0, "Elemental attacks such as stone fists or flaming weapons."],
-      ["Nature Sight", "spirit", 0, "See through fog, stone, flame, metal, plants or water."],
-      ["Resist Elements", "spirit", 0, "Resistance to your package's element."],
-      ["Speak With Beasts", "spirit", 0, "Communicate with beasts.", { cost: 1 }],
-      ["Speak With Elements", "spirit", 0, "Communicate with clouds, stone, fire, metal, plants or water.", { cost: 1 }],
+      ["Beast Friend", "spirit", 0, "Befriend beasts and call one to you.", { abilities: [
+        SPIRIT("beastFriend", "Beast Friend", null, { cost: 1,
+          summary: "Beasts treat you as a friend and follow simple requests; once during the duration you can call the nearest beast of a kind you choose (CR up to your level)." })
+      ] }],
+      ["Dragonlung", "spirit", 0, "A breath weapon whose damage type depends on your packages.", { abilities: PACKAGES.map(p =>
+        SPIRIT(`dragonlung${p}`, `Dragonlung (${ELEMENT_LABELS[p]})`, p, { type: "save", save: "dex", range: "self",
+          duration: [0, "inst", false], template: ["cone", 30], damage: { key: "dragonlung", types: ELEMENT_TYPES[p] },
+          summary: `Breathe a 30 ft cone or 60 ft line (recharge 5-6): 2d6 ${ELEMENT_LABELS[p].toLowerCase()} damage, +1d6 at 5th, 11th and 17th level; Dexterity save for half.`,
+          augments: [{ key: "line", label: "60 ft line instead of a cone", cost: 0, template: ["line", 60, 5] }] })) }],
+      ["Meld with Nature", "spirit", 0, "Step into earth, metal, plants or ice.", { abilities: [
+        ["Earth", "Sand and Stone"], ["Metal", "Metal and Ore"], ["Plant", "Plants and Wood"], ["Water", "Ice"]
+      ].map(([p, what]) => SPIRIT(`meld${p}`, `Meld into ${what}`, p, {
+        summary: `Step into ${what.toLowerCase()} large enough to hold you and meld with it, undetectable by normal senses; leaving ends the effect.`,
+        augments: [{ key: "rest", label: "Spend hit dice while melded", cost: 1 }] })) }],
+      ["Nature's Carapace", "spirit", 0, "Elemental protection such as stoneskin, barkskin or a flame mantle.", { abilities: [
+        SPIRIT("buffetingWinds", "Buffeting Winds", "Air", { summary: "Ranged attacks against you have disadvantage." }),
+        SPIRIT("stoneskin", "Stoneskin", "Earth", { cost: 1, summary: "Resistance to nonmagical bludgeoning, piercing and slashing damage." }),
+        SPIRIT("flameMantle", "Flame Mantle", "Fire", { cost: 1, summary: "Creatures within 5 ft that hit you with a melee attack take 1d4 fire damage (2d4 at 5th, 3d4 at 11th, 4d4 at 17th level)." }),
+        SPIRIT("ironBody", "Iron Body", "Metal", { summary: "Merge with your metal armor: 5 temporary hit points (15 at 5th, 25 at 11th, 35 at 17th level) and no stealth or speed penalty from it." }),
+        SPIRIT("barkskin", "Barkskin", "Plant", { cost: 1, summary: "Your AC cannot be less than 15 (16 at 5th, 17 at 11th, 18 at 17th level)." }),
+        SPIRIT("seamantle", "Seamantle", "Water", { summary: "Advantage on Athletics or Acrobatics checks to contest or escape a grapple." })
+      ] }],
+      ["Nature's Motion", "spirit", 0, "Walk on air, water or through terrain freely.", { abilities: [
+        SPIRIT("airwalk", "Airwalk", "Air", { cost: 1, summary: "Climb or descend through the air at up to 45 degrees as you move; falling is slowed to 60 ft per round." }),
+        SPIRIT("stonestep", "Stonestep", "Earth", { summary: "Ignore natural difficult terrain of earth, rock and sand, and walk safely across quicksand." }),
+        SPIRIT("smokewalk", "Smokewalk", "Fire", { summary: "Walk on fire and smoke as if solid ground, see through smoke and breathe it harmlessly." }),
+        SPIRIT("ironshod", "Ironshod", "Metal", { cost: 1, summary: "Resistance to damage from difficult terrain, hazards and traps." }),
+        SPIRIT("greenstep", "Greenstep", "Plant", { summary: "Ignore difficult terrain caused by natural plants." }),
+        SPIRIT("waterwalk", "Waterwalk", "Water", { cost: 1, summary: "Walk on water and other liquids, or sink and swim with a swim speed equal to your walking speed." })
+      ] }],
+      ["Nature's Weapon", "spirit", 0, "Elemental attacks such as stone fists or flaming weapons.", { abilities: [
+        SPIRIT("cacophony", "Cacophony", "Air", { summary: "Once each round as an action, a cone of wind to your geomancy range: 1d4 thunder damage (up to 4d4) and deafened for 1 round (Constitution save negates)." }),
+        SPIRIT("stoneFist", "Stone Fist", "Earth", { summary: "Encase a fist in stone: +2 AC and unarmed strikes deal 1d6 + Strength (1d8 at 5th, 1d10 at 11th, 1d12 at 17th level)." }),
+        SPIRIT("fireWielder", "Fire Wielder", "Fire", { cost: 1, summary: "Your melee weapon attacks and unarmed strikes deal an extra 1d4 fire damage (1d6 at 5th, 1d8 at 11th, 1d10 at 17th level)." }),
+        SPIRIT("bladeWhip", "Blade Whip", "Metal", { summary: "In place of an attack, stretch a metal weapon to shove a creature within geomancy range prone." }),
+        SPIRIT("brambleStrike", "Bramble Strike", "Plant", { summary: "Hits with a wooden weapon grapple the target (restrain if already grappled) unless it makes a Dexterity save." }),
+        SPIRIT("icicles", "Icicles", "Water", { cost: 1, summary: "Create ice daggers that deal magical cold damage, +1 to attack and damage at 5th level (+2 at 11th, +3 at 17th)." })
+      ] }],
+      ["Nature Sight", "spirit", 0, "See through fog, stone, flame, metal, plants or water.", { abilities: [
+        SPIRIT("cloudsight", "Cloudsight", "Air", { summary: "See through fog, mist and smoke within your geomancy range." }),
+        SPIRIT("earthsight", "Earthsight", "Earth", { cost: 1, summary: "Tremorsense through the ground you stand on, within your geomancy range." }),
+        SPIRIT("firesight", "Firesight", "Fire", { summary: "See through flames, lava and smoke within your geomancy range." }),
+        SPIRIT("metalsight", "Metalsight", "Metal", { summary: "Smell out metal objects and creatures carrying metal (DC 10 Perception, 60 ft)." }),
+        SPIRIT("plantsight", "Plantsight", "Plant", { summary: "See through leaves, vines, undergrowth and living wood within your geomancy range." }),
+        SPIRIT("watersense", "Watersense", "Water", { cost: 1, summary: "Tremorsense through the body of water you are in, within your geomancy range." })
+      ] }],
+      ["Resist Elements", "spirit", 0, "Resistance to your package's element.", { abilities: PACKAGES.map(p =>
+        SPIRIT(`resist${p}`, `Resist ${ELEMENT_LABELS[p]}`, p, {
+          summary: `Resistance to ${ELEMENT_LABELS[p].toLowerCase()} damage for the duration.`,
+          augments: [{ key: "reaction", label: "Use as a reaction (lasts 1 round)", cost: 1 },
+            { key: "heal", label: "Regain 1d6 hit points (up to 4d6) when you resist the element", cost: 1 }] })) }],
+      ["Speak With Beasts", "spirit", 0, "Communicate with beasts.", { abilities: [
+        SPIRIT("speakBeasts", "Speak With Beasts", null, { cost: 1, summary: "Understand and speak with beasts; they can tell you about the area and may do small favors." })
+      ] }],
+      ["Speak With Elements", "spirit", 0, "Communicate with clouds, stone, fire, metal, plants or water.", { abilities: [
+        ["Air", "Clouds", "clouds of fog or mist"], ["Earth", "Stone", "natural or worked stone"], ["Fire", "Fire", "fire or smoke"],
+        ["Metal", "Metal", "ore or worked metal"], ["Plant", "Plants", "plants and plant creatures"], ["Water", "Water", "pools and bodies of water"]
+      ].map(([p, name, what]) => SPIRIT(`speak${p}`, `Speak With ${name}`, p, { cost: 1,
+        summary: `Gain Primordial and learn from ${what} what has touched or passed it and what is hidden in it.` })) }],
       ["Expanded Geomancy", "other", 0, "Gain another Nature package. Can be taken more than once."],
       ["Master of Elements", "other", 0, "Count as having three more packages."],
       ["Earthquake", "geomancy", 1, "A 100 ft radius earthquake (15th level).", { cost: 3, packages: ["Earth Package"] }],
       ["Freezing Geyser", "geomancy", 1, "A boiling geyser (5d6 fire) that snap-freezes (15th level).", { cost: 3, packages: ["Water Package"] }],
-      ["Natural Ally", "spirit", 1, "Summon beasts, elementals, fey or plants (5th level).", { cost: 3 }],
+      ["Natural Ally", "spirit", 1, "Summon beasts, elementals, fey or plants (5th level).", { abilities: [
+        SPIRIT("naturalAlly", "Natural Ally", null, { cost: 3, summary: "Summon beasts, elementals, fey or plants to fight for you." })
+      ] }],
       ["Persistent Cloud", "geomancy", 1, "Fog effects become permanent (11th level).", { packages: ["Water Package"] }],
-      ["Phoenix Resurgence", "spirit", 1, "Explode at 0 hit points and return next turn (5th level).", { cost: 3 }],
+      ["Phoenix Resurgence", "spirit", 1, "Explode at 0 hit points and return next turn (5th level).", { abilities: [
+        SPIRIT("phoenix", "Phoenix Resurgence", "Fire", { cost: 3, type: "save", save: "dex", activation: "reaction",
+          duration: [0, "inst", false], template: ["radius", 15], damage: { key: "phoenix", types: ["fire"] },
+          summary: "When reduced to 0 hit points, explode for 1d6 fire damage per two levels in a 15 ft radius (Dexterity save for half) and return next turn with hit points equal to your level." })
+      ] }],
       ["Rapid Growth", "geomancy", 1, "Turn a mile of land into forest or boost farmland (15th level).", { cost: 3, packages: ["Plant Package"] }],
       ["Tsunami", "geomancy", 1, "A huge wave dealing 6d10 bludgeoning (15th level).", { cost: 2, packages: ["Water Package"] }],
       ["Volcano", "geomancy", 1, "A lava spout dealing 10d6 fire (15th level).", { cost: 3, packages: ["Earth Package", "Fire Package"] }],
-      ["Whispering Wind", "spirit", 1, "Send a message over miles on the wind.", { cost: 2 }],
+      ["Whispering Wind", "spirit", 1, "Send a message over miles on the wind.", { abilities: [
+        SPIRIT("whisperingWind", "Whispering Wind", "Air", { cost: 2, range: "any", duration: [0, "inst", false],
+          summary: "Send a message of up to 20 + your level words on the wind to a familiar place within 1 mile per level." })
+      ] }],
       ["Wildfire", "geomancy", 1, "A 1000 ft burst of 2d8 fire (5th level).", { cost: 3, packages: ["Fire Package"] }]
     ]
   },
@@ -508,7 +586,7 @@ export const SPHERES_B = [
     summary: "Magic that works across spheres: dispelling, mana, metamagic, spellcrafting and wild magic. Choose a package when you gain it; each package brings its own ability or talent.",
     abilities: [
       { key: "package", name: "Package Ability", type: "utility", activation: "action", range: "self",
-        summary: "Choose one of your Universal packages, then the ability it grants.", packages: true }
+        summary: "Choose one of your Universal packages, then the ability it grants.", packages: "package" }
     ],
     talents: [
       ["Dispel Package", "package", 0, "Grants the Dispel ability.", { abilities: [

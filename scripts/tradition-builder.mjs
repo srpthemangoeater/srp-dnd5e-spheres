@@ -1,5 +1,5 @@
 import { KEY_ABILITIES, MODULE_ID, PACKS, TEMPLATES } from "./constants.mjs";
-import { computeSpheres, drawbackBonus } from "./spell-points.mjs";
+import { casterLevel, computeSpheres, drawbackBonus } from "./spell-points.mjs";
 import { applyTradition, packEntries, readTradition } from "./tradition.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -91,7 +91,7 @@ export class TraditionBuilder extends HandlebarsApplicationMixin(ApplicationV2) 
   async _prepareContext(options) {
     const entries = await this.#loadEntries();
     const state = this.#state;
-    const level = this.actor.system.details?.level ?? 0;
+    const level = this.actor.type === "npc" && state.casterLevel ? state.casterLevel : casterLevel(this.actor);
     const current = computeSpheres(this.actor);
 
     const drawbacks = entries.drawbacks.map(e => {
@@ -128,6 +128,7 @@ export class TraditionBuilder extends HandlebarsApplicationMixin(ApplicationV2) 
 
     return {
       state,
+      isNPC: this.actor.type === "npc",
       presets,
       abilities: KEY_ABILITIES.map(k => ({
         key: k, label: CONFIG.DND5E.abilities[k].label, selected: k === state.kam,
@@ -172,7 +173,7 @@ export class TraditionBuilder extends HandlebarsApplicationMixin(ApplicationV2) 
       if ( target.checked ) state.boons.add(uuid);
       else state.boons.delete(uuid);
     }
-    else if ( ["classSP", "spBonus", "talentBonus"].includes(name) ) state[name] = Number(target.value) || 0;
+    else if ( ["classSP", "spBonus", "talentBonus", "casterLevel"].includes(name) ) state[name] = Number(target.value) || 0;
     else if ( name === "setSpellcasting" ) state.setSpellcasting = target.checked;
     else if ( name in state ) state[name] = target.value;
     else return;
