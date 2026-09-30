@@ -90,6 +90,15 @@ function renderCard(flags, { canResolve, openSections }) {
         `${localize("DND5E-SPHERES.Chat.Talents")} <span class="sc-names">${talents.map(t => escape(t.name)).join(", ")}</span>`,
         talents.map(t => detailItem(t.name, t.category, t.cost, t.summary)).join(""), { open: wasOpen("talents", false) }));
     }
+    // Enhancement option, and its effect with an Apply button.
+    if ( cast.option ) {
+      const o = cast.option;
+      const head = `${localize("DND5E-SPHERES.Chat.Option")} <span class="sc-names">${escape(o.name)}${o.choice ? ` (${escape(o.choice)})` : ""}</span>`
+        + ` <span class="sc-meta">${escape(localize(`DND5E-SPHERES.Cast.Mode.${o.mode}`))}</span>`;
+      const apply = cast.effect && !preview ? `<div class="sc-row sc-effect-row"><span class="sc-name"><i class="fas fa-bolt" inert></i> ${escape(cast.effect.name)}</span>`
+        + `<button type="button" class="sc-button" data-sc-action="applyEffect">${localize("DND5E-SPHERES.Chat.ApplyEffect")}</button></div>` : "";
+      parts.push(section("option", head, `${apply}<div class="sc-text">${escape(o.summary)}</div>`, { open: wasOpen("option", !!apply) }));
+    }
     const augments = cast.augmentDetails ?? [];
     if ( augments.length ) {
       parts.push(section("augments",
@@ -125,6 +134,40 @@ function renderCard(flags, { canResolve, openSections }) {
       rows.join(""), { open: wasOpen("drawbacks", false), classes: "sc-drawbacks" }));
   }
   return parts.join("");
+}
+
+/**
+ * Apply a cast's Active Effect (an Enhancement option) to the user's targeted tokens, or else the targets recorded on
+ * the message. It lasts as long as the ability and, when cast with concentration, ends with the caster's concentration.
+ */
+export async function applyCastEffect(message) {
+  const cast = message.flags?.[MODULE_ID]?.cast;
+  const effect = cast?.effect;
+  if ( !effect ) return;
+  let actors = [...game.user.targets].map(t => t.actor).filter(_ => _);
+  // Targets recorded when the ability was used: token or actor UUIDs.
+  if ( !actors.length ) actors = (message.system?.targets ?? []).map(t => fromUuidSync(t.token ?? t.actor ?? t.uuid, { strict: false }))
+    .map(d => (d instanceof Actor) ? d : d?.actor).filter(_ => _);
+  actors = [...new Set(actors)];
+  if ( !actors.length ) return ui.notifications.warn("DND5E-SPHERES.Chat.NoTargets", { localize: true });
+
+  const caster = message.flags[MODULE_ID].actorUuid ? fromUuidSync(message.flags[MODULE_ID].actorUuid)
+    : ChatMessage.getSpeakerActor(message.speaker);
+  const concentration = effect.concentration ? caster?.effects.get(message.system?.concentration) : null;
+  const data = {
+    name: effect.name, img: effect.img, description: effect.description, origin: message.getAssociatedItem?.()?.uuid ?? caster?.uuid,
+    system: { changes: effect.changes }, statuses: effect.statuses ?? [],
+    ...(effect.duration ? { duration: effect.duration } : {}),
+    flags: { [MODULE_ID]: { cast: message.id }, ...(concentration ? { dnd5e: { dependentOn: concentration.uuid } } : {}) }
+  };
+  const denied = [];
+  for ( const actor of actors ) {
+    if ( !actor.isOwner ) { denied.push(actor.name); continue; }
+    await actor.createEmbeddedDocuments("ActiveEffect", [foundry.utils.deepClone(data)]);
+  }
+  const applied = actors.length - denied.length;
+  if ( applied ) ui.notifications.info(format("DND5E-SPHERES.Chat.EffectApplied", { name: effect.name, count: applied }));
+  if ( denied.length ) ui.notifications.warn(format("DND5E-SPHERES.Chat.EffectDenied", { names: denied.join(", ") }));
 }
 
 /** Add the spheres block to a chat message: after the dnd5e card header, or at the top of plain messages. */
@@ -164,6 +207,7 @@ function onRenderChatMessage(message, html) {
       button.disabled = true;
       await resolveRow(message, row.dataset.key);
     }
+    if ( button.dataset.scAction === "applyEffect" ) await applyCastEffect(message);
   });
 }
 

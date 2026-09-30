@@ -67,9 +67,34 @@
       "Later": "Choose later",
       "None": "No free talents left to choose.",
       "Pending": "Free talents to choose",
-      "Badge": "Free pick"
+      "Badge": "Free pick",
+      "Associated": "One free blast type associated with the {sphere} sphere, which you have."
     },
     "Section": "Spheres",
+    "Custom": {
+      "Button": "Custom",
+      "Title": "Custom Talent",
+      "EditTitle": "Edit Custom Talent",
+      "Edit": "Edit custom talent",
+      "Badge": "Custom",
+      "Intro": "Add a talent that is not in the compendiums. It works like other talents: it costs a magic talent, shows under its sphere, joins the cast dialog in its category (for example as a blast type), and can be an augment.",
+      "Name": "Name",
+      "Sphere": "Sphere",
+      "Category": "Category",
+      "Cost": "Spell point cost",
+      "Applies": "Augment for",
+      "AppliesNone": "Nothing (not an augment)",
+      "AppliesAll": "Every ability of the sphere",
+      "CostHint": "Group talents (blast types, shapes, charms...) add their cost when chosen. Other talents with a cost appear as augments for the ability chosen here.",
+      "DamageType": "Damage type",
+      "Bonus": "Damage bonus",
+      "Free": "Does not cost a magic talent",
+      "Description": "Description",
+      "Note": "Custom talent.",
+      "NeedName": "Give the talent a name.",
+      "Create": "Add talent",
+      "Save": "Save"
+    },
     "DeleteTitle": "Delete {name}",
     "DeleteConfirm": "Delete <strong>{name}</strong> from this character?",
     "Browser": {
@@ -128,7 +153,10 @@
       "NeedsTalent": "Needs the {talent} talent",
       "Borrowed": "Master of Elements",
       "BorrowedHint": "You count as having this package for (spirit) talents.",
-      "Area": "Area: {area}"
+      "Area": "Area: {area}",
+      "Damage": "Damage: {damage}",
+      "HasEffect": "Applies an Active Effect to its targets from the chat card.",
+      "Mode": { "enhance": "Enhance", "degrade": "Degrade" }
     },
     "FeatureType": {
       "castingTradition": "Casting Tradition",
@@ -162,6 +190,11 @@
       "SetSpellcasting": "Also use the key ability as this character's spellcasting ability"
     },
     "Chat": {
+      "Option": "Option",
+      "ApplyEffect": "Apply to targets",
+      "NoTargets": "Target the creatures to affect first.",
+      "EffectApplied": "{name} applied to {count} target(s).",
+      "EffectDenied": "Only the GM or their owners can apply effects to: {names}.",
       "Spent": "Spent {spent} SP ({remaining} / {max} left)",
       "Spent0": "No spell points spent",
       "SpentShort": "−{spent} SP ({remaining}/{max})",

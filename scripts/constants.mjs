@@ -39,7 +39,8 @@ export const TEMPLATES = {
   cast: `modules/${MODULE_ID}/templates/cast-dialog.hbs`,
   browserFilters: `modules/${MODULE_ID}/templates/browser-filters.hbs`,
   browserResults: `modules/${MODULE_ID}/templates/browser-results.hbs`,
-  freePicks: `modules/${MODULE_ID}/templates/free-picks.hbs`
+  freePicks: `modules/${MODULE_ID}/templates/free-picks.hbs`,
+  customTalent: `modules/${MODULE_ID}/templates/custom-talent.hbs`
 };
 
 export const PACKS = {

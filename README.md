@@ -168,6 +168,8 @@ a summary of the tradition.
   (10 ft line, or up to 30 ft), Sculpt (5 ft radius, or a 30 ft cone or 120 ft line), Sphere, Wall (5 ft panels, or
   10 ft), Calamity (30 ft around you, a 90 ft cone or a 500 ft line) and Cloud. Choose the shape, and its area option
   among the augments; the cast then places a matching template, and the area is shown on the chat card.
+- The cast dialog shows the damage the cast will roll (for example 3d8 fire when empowered), and damage rolled from
+  a chat card always uses that card's formula, even after later casts.
 - Destructive Blast damage follows the rules (1d8 per tier, or 1d8 + 1d8 per 2 levels when
   empowered) with the blast type's damage type; Ray and Tether switch to a spell attack.
   Cure, Invigorate and telekinetic Projectile also compute their formulas from the chosen talents.
@@ -195,11 +197,32 @@ a summary of the tradition.
   offers *Post to chat* and *Edit tradition*.
 - In edit mode rows can be dragged to reorder within their list.
 
+### Custom talents
+The **Custom** button on the Spheres tab adds a talent that is not in the compendiums: name, sphere, category,
+advanced, spell point cost, the ability it augments, damage type and bonus, whether it costs a magic talent, and a
+description. It behaves like any other talent: it counts toward magic talents, is listed under its sphere, joins
+the cast dialog in its category (for example as a blast type, with its damage type) or as an augment, and its text
+is shown on the chat card. Right-click it and choose *Edit custom talent* to change it.
+
+### Enhancement options and effects
+Enhancement talents follow the wiki: a talent can hold several options (Physical Enhancement: Enhance Physique and
+Superior Reflexes; Mental Enhancement, Deadly Weapon, Enhance Poison, Enhance Size, False Energy, Steal Ability),
+each with an enhance and/or degrade version. After choosing the talent in the *Enhance* or *Degrade* dialog, pick the
+option (and its choice, such as which ability, speed or saving throw); an option's own cost replaces the base cost.
+Options with a mechanical effect (advantage or disadvantage on checks, initiative or saves, save proficiency,
+speed changes, resistance or vulnerability, carrying capacity, conditions, extra weapon damage) add **Apply to
+targets** on the chat card: it creates an Active Effect on your targeted tokens (or the targets recorded when you
+cast), lasting as long as the ability and ending with your concentration unless cast without it.
+
 ### Free talents when first gaining a sphere
 Adding a sphere to a character opens a picker for the talents it grants on first acquisition (for
 example Destruction: one blast type, which need not match a sphere you have, and one blast shape).
 Chosen talents are marked *Free pick* and do not cost magic talents. Skip it with *Choose later* and
 pick them from the sphere's right-click menu or its *Free talents to choose* button.
+
+**Destruction** also grants one free blast type for each other sphere you have, chosen from that sphere's blast
+types: adding Destruction offers one per sphere you already have, and adding a sphere later offers its blast type.
+**Extra Blast Type** offers three blast types of any sphere (not advanced).
 
 Spheres with free picks: Alteration (genotype), Conjuration (base companion), Death (undead),
 Destruction (blast type + blast shape), Divination (divine + sense), Enhancement (enhancement),

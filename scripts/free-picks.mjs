@@ -1,14 +1,37 @@
 import { categoryLabel } from "../src/categories.mjs";
 import { FREE_PICKS } from "../src/free-picks.mjs";
-import { MODULE_ID, PACKS, TEMPLATES } from "./constants.mjs";
+import { MODULE_ID, PACKS, SPHERE_NAMES, TEMPLATES } from "./constants.mjs";
 import { isFeatureType, itemFlags } from "./spell-points.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 const sphereKeyOf = item => itemFlags(item).sphere ?? item.system.identifier;
 
-/** The item that grants picks: a sphere (key = sphere key) or a talent such as a package (key = talent key). */
-const sourceKeyOf = item => isFeatureType(item, "sphere") ? sphereKeyOf(item) : (itemFlags(item).key ?? item.name);
+/**
+ * The item that grants picks: a sphere (key = sphere key) or a talent such as a package (key = talent key). Talents
+ * that can be taken more than once (Extra Blast Type) count their picks per copy.
+ */
+const sourceKeyOf = item => isFeatureType(item, "sphere") ? sphereKeyOf(item)
+  : itemFlags(item).repeatable ? `${item.name}#${item.id}` : (itemFlags(item).key ?? item.name);
+
+/**
+ * Destruction: each other sphere the actor has grants one free blast type associated with it (blast types list their
+ * sphere as `free`). Returns one pick per such sphere, unless the actor already has one of its blast types.
+ */
+function sphereBlastPicks(destruction) {
+  const actor = destruction.actor;
+  if ( !actor || !isFeatureType(destruction, "sphere") || (sphereKeyOf(destruction) !== "destruction") ) return [];
+  const blastTypes = actor.items.filter(i => isFeatureType(i, "talent") && (itemFlags(i).category === "blastType"));
+  return actor.items.filter(i => isFeatureType(i, "sphere") && (sphereKeyOf(i) !== "destruction"))
+    .map(sphere => SPHERE_NAMES[sphereKeyOf(sphere)] ?? sphere.name)
+    .filter((name, i, all) => all.indexOf(name) === i)
+    .map(name => ({
+      categories: ["blastType"], count: 1, associated: name, slot: `sphere-${name.toLowerCase()}`,
+      // Blast types from numbered picks (the first free blast type, Extra Blast Type) do not use up a sphere's.
+      remaining: blastTypes.some(t => (itemFlags(t).free === name)
+        && !(itemFlags(t).freePick && (typeof itemFlags(t).freePickSlot === "number"))) ? 0 : 1
+    }));
+}
 
 /** Free pick slots for a sphere or talent: from its data, or the built-in table for older sphere items. */
 export const freePicksOf = item => itemFlags(item).freePicks
@@ -27,7 +50,7 @@ export function remainingPicks(item) {
       return (f.freePickSource ?? f.sphere) === source && (f.sphere === sphere);
     }).length ?? 0;
     return { ...pick, slot, remaining: Math.max(0, pick.count - taken) };
-  });
+  }).concat(sphereBlastPicks(item));
 }
 
 export const hasRemainingPicks = item => remainingPicks(item).some(p => p.remaining > 0);
@@ -99,12 +122,13 @@ export class FreePicksDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       const options = index.filter(e => {
         const f = e.flags?.[MODULE_ID] ?? {};
         return (f.sphere === key) && pick.categories.includes(f.category) && !f.advanced && !f.builtIn
-          && !owned.has(`${key}.${e.name}`);
+          && (!pick.associated || (f.free === pick.associated)) && !owned.has(`${key}.${e.name}`);
       }).map(e => ({ uuid: e.uuid, name: e.name, category: categoryLabel(e.flags[MODULE_ID].category) }))
         .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
       return {
-        slot: pick.slot, note: pick.note ?? "",
-        label: pick.categories.map(categoryLabel).join(" / "),
+        slot: pick.slot,
+        note: pick.associated ? game.i18n.format("DND5E-SPHERES.FreePicks.Associated", { sphere: pick.associated }) : (pick.note ?? ""),
+        label: pick.categories.map(categoryLabel).join(" / ") + (pick.associated ? ` (${pick.associated})` : ""),
         selects: Array.fromRange(pick.remaining).map(n => ({ name: `pick.${pick.slot}.${n}`, options }))
       };
     });
@@ -114,7 +138,10 @@ export class FreePicksDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   static async #onSubmit(event, form, formData) {
     const source = sourceKeyOf(this.source);
     const entries = Object.entries(formData.object).filter(([k, v]) => k.startsWith("pick.") && v)
-      .map(([name, uuid]) => ({ uuid, flags: { freePickSource: source, freePickSlot: Number(name.split(".")[1]) } }));
+      .map(([name, uuid]) => {
+        const slot = name.split(".")[1];
+        return { uuid, flags: { freePickSource: source, freePickSlot: Number.isNumeric(slot) ? Number(slot) : slot } };
+      });
     await addFreeTalents(this.actor, entries);
   }
 
@@ -128,8 +155,16 @@ async function onCreateItem(item, options, userId) {
   if ( (userId !== game.user.id) || !item.actor ) return;
   if ( !isFeatureType(item, "sphere") && !isFeatureType(item, "talent") ) return;
   if ( isFeatureType(item, "sphere") ) await addIncludedTalents(item);
-  if ( options.spheresSkipFreePicks || !hasRemainingPicks(item) ) return;
-  new FreePicksDialog(item).render({ force: true });
+  if ( options.spheresSkipFreePicks ) return;
+  if ( hasRemainingPicks(item) ) new FreePicksDialog(item).render({ force: true });
+  // A new sphere next to Destruction offers its associated blast type.
+  if ( isFeatureType(item, "sphere") && (sphereKeyOf(item) !== "destruction") ) {
+    const destruction = item.actor.items.find(i => isFeatureType(i, "sphere") && (sphereKeyOf(i) === "destruction"));
+    const name = SPHERE_NAMES[sphereKeyOf(item)] ?? item.name;
+    if ( destruction && remainingPicks(destruction).some(p => (p.associated === name) && p.remaining) ) {
+      new FreePicksDialog(destruction, { id: `${MODULE_ID}-picks-${destruction.id}` }).render({ force: true });
+    }
+  }
 }
 
 export function registerFreePickHooks() {

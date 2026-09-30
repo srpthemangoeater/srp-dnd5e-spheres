@@ -6,6 +6,15 @@
 
 const NO_CONC = { key: "noConc", label: "Lasts without concentration", cost: 2 };
 
+/**
+ * An Enhancement option: `mode` is "enhance" or "degrade". `changes` are Active Effect changes as
+ * [key, type, value] (or an object of them per choice), with {choice}, {speedBonus} and {halfProf} filled in at cast.
+ */
+const OPT = (key, name, mode, summary, opts={}) => ({ key: `${key}.${mode}`, name, mode, summary, ...opts });
+const SPEEDS = { label: "Speed", values: { walk: "Walk", fly: "Fly", swim: "Swim", climb: "Climb", burrow: "Burrow" } };
+const ABILITIES = { label: "Saving throw", values: { str: "Strength", dex: "Dexterity", con: "Constitution",
+  int: "Intelligence", wis: "Wisdom", cha: "Charisma" } };
+
 /** Every damage type a blast type can deal; the cast dialog picks the one that applies. */
 const BLAST_TYPES = ["force", "acid", "bludgeoning", "cold", "fire", "lightning", "necrotic", "piercing", "poison",
   "psychic", "radiant", "slashing", "thunder"];
@@ -385,7 +394,8 @@ export const SPHERES_A = [
       ["Blaster Adept", "other", 0, "Add your key ability modifier to damage of one chosen damage type."],
       ["Energy Weapon", "other", 0, "Conjure a magical weapon that deals your blast type damage (concentration, 1 minute)."],
       ["Epicenter", "other", 0, "You are immune to your own destructive blasts."],
-      ["Extra Blast Type", "other", 0, "Gain three blast types you do not have. Can be taken more than once."],
+      ["Extra Blast Type", "other", 0, "Gain three blast types you do not have. Can be taken more than once.", { repeatable: true,
+        freePicks: [{ categories: ["blastType"], count: 3, note: "They do not need to be associated with a sphere you have." }] }],
       ["Guided Strike", "other", 0, "Advantage on destructive blast spell attacks."],
       ["Selective Blast", "other", 0, "Exclude one creature from an instantaneous blast (more with an augment).", { cost: 1, applies: ["blast", "blastAttack"] }],
       ["Calamity", "blastShape", 1, "Sculpt becomes a 500 ft line, a 90 ft cone or everything within 30 ft (11th level).", { cost: 1, template: ["radius", 30],
@@ -496,30 +506,112 @@ export const SPHERES_A = [
         augments: [NO_CONC] }
     ],
     talents: [
-      ["Animate Object", "enhancement", 0, "Enhance: animate a Tiny object (AC 18, 20 hp). Degrade: restrain a construct."],
-      ["Bestow Intelligence", "enhancement", 0, "Enhance: give a mindless creature Intelligence 10 and a language. Degrade: reduce a construct's Intelligence to 2."],
-      ["Keen Weapon", "enhancement", 0, "Enhance: a weapon scores critical hits on 19-20. Degrade: its damage dice count as 1s."],
-      ["Pursuant Ammunition", "enhancement", 0, "Enhance: ranged attacks ignore one level of cover. Degrade: ranged attacks have disadvantage."],
-      ["Versatile Weapon", "enhancement", 0, "A weapon counts as a chosen material."],
-      ["Energy Weapon", "enhancement", 0, "A weapon deals an extra 1d6 of a chosen energy type."],
-      ["Enhance Equipment", "enhancement", 0, "Enhance: equipment becomes magical with a bonus of half your proficiency bonus. Degrade: suppress magical bonuses."],
-      ["Corrosive Poison", "enhancement", 0, "Poison damage becomes acid damage."],
-      ["Enhance Virulence", "enhancement", 0, "Poisons are harder or easier to resist."],
-      ["Enhance Capacity", "enhancement", 0, "Double or quarter carrying capacity."],
-      ["Improved Flexibility", "enhancement", 0, "Squeeze as one size smaller or larger."],
-      ["Ignore Exhaustion", "enhancement", 0, "Ignore exhaustion levels up to your proficiency bonus."],
-      ["Resist Debilitation", "enhancement", 0, "Ignore ability score reductions."],
-      ["Manipulate Hardness", "enhancement", 0, "Enhance: resistance to physical damage. Degrade: vulnerability."],
-      ["Enhance Focus", "enhancement", 0, "Enhance: treat skill checks as 10 or better. Degrade: lose proficiency on checks."],
-      ["Enhance Mind", "enhancement", 0, "Advantage or disadvantage on Intelligence, Wisdom and Charisma checks."],
-      ["Muffle Sound", "enhancement", 0, "Muffle or amplify the target's sounds."],
-      ["Enhance Physique", "enhancement", 0, "Advantage or disadvantage on Strength, Dexterity and Constitution checks."],
-      ["Superior Reflexes", "enhancement", 0, "Advantage on initiative and a free opportunity attack, or the reverse."],
-      ["Speed Control", "enhancement", 0, "Enhance: +10 ft speed (more at higher levels). Degrade: halve a speed."],
-      ["Staunch Resistance", "enhancement", 0, "Enhance: proficiency in a save. Degrade: disadvantage on saves."],
-      ["Steal Senses", "enhancement", 0, "Degrade: blind, deafen or remove a special sense.", { cost: 1 }],
-      ["Still Tongue", "enhancement", 0, "Degrade: the target cannot speak or use verbal components."],
-      ["Weight Control", "enhancement", 0, "Change the weight of a creature or object."],
+      ["Animate Object", "enhancement", 0, "Enhance: animate a Tiny object (AC 18, 20 hp, larger at higher levels). Degrade: restrain a construct.", { options: [
+        OPT("animate", "Animate Object", "degrade", "A construct is restrained.", { statuses: ["restrained"] }),
+        OPT("animate", "Animate Object", "enhance", "Animate a Tiny object (Small at 5th, Medium at 11th, Large at 17th level) that obeys simple commands; command it as a bonus action within 500 ft.",
+          { cost: 2, augments: [{ key: "size1", label: "Target an object one size larger", cost: 1 }, { key: "size2", label: "Target an object two sizes larger", cost: 2 }] })
+      ] }],
+      ["Bestow Intelligence", "enhancement", 0, "Enhance: give a mindless creature or object Intelligence 10 and a language. Degrade: reduce a construct's Intelligence to 2.", { options: [
+        OPT("intellect", "Bestow Intelligence", "degrade", "A construct's Intelligence becomes 2 (unless lower) and it cannot speak or understand languages.",
+          { changes: [["system.abilities.int.value", "downgrade", 2]], augments: [{ key: "stun", label: "Also stunned for 1d4 rounds", cost: 1 }] }),
+        OPT("intellect", "Bestow Intelligence", "enhance", "A tree, object or creature with Intelligence 3 or less gains Intelligence 10 and one language you know, and is friendly to you.",
+          { cost: 1, changes: [["system.abilities.int.value", "upgrade", 10]] })
+      ] }],
+      ["Deadly Weapon", "enhancement", 0, "Keen Weapon, Pursuant Ammunition and Versatile Weapon options for weapons.", { options: [
+        OPT("keen", "Keen Weapon", "degrade", "A weapon, natural weapon or unarmed strike treats all damage dice as 1s and cannot score critical hits."),
+        OPT("keen", "Keen Weapon", "enhance", "A weapon, natural weapon or unarmed strike scores a critical hit on a 19 or 20."),
+        OPT("pursuant", "Pursuant Ammunition", "degrade", "Ranged attacks with the weapon have disadvantage, and misses may veer toward the attacker's allies."),
+        OPT("pursuant", "Pursuant Ammunition", "enhance", "Ranged attacks with the weapon treat the target's cover as one step lower."),
+        OPT("versatile", "Versatile Weapon", "enhance", "A weapon, natural weapon or unarmed strike counts as a chosen material for bypassing resistance.",
+          { choice: { label: "Material", values: { silvered: "Silvered", adamantine: "Adamantine", magical: "Magical" } } })
+      ] }],
+      ["Energy Weapon", "enhancement", 0, "Enhance: a weapon deals an extra 1d6 acid, cold, fire, lightning, necrotic, radiant or thunder damage.", { options: [
+        OPT("energy", "Energy Weapon", "enhance", "Weapon attacks deal an extra 1d6 damage of the chosen type (one instance per weapon).", {
+          choice: { label: "Damage type", values: { acid: "Acid", cold: "Cold", fire: "Fire", lightning: "Lightning", necrotic: "Necrotic", radiant: "Radiant", thunder: "Thunder" } },
+          changes: [["system.bonuses.mwak.damage", "add", "1d6[{choice}]"], ["system.bonuses.rwak.damage", "add", "1d6[{choice}]"]] })
+      ] }],
+      ["Enhance Equipment", "enhancement", 0, "Enhance: equipment becomes magical with a bonus of half your proficiency bonus. Degrade: suppress magical bonuses.", { options: [
+        OPT("equipment", "Enhance Equipment", "enhance", "A weapon or natural weapon gains a bonus to attack and damage rolls (armor or a shield: to AC) equal to half your proficiency bonus, and counts as magical.",
+          { choice: { label: "Equipment", values: { weapon: "Weapon", armor: "Armor or shield" } },
+            changes: { weapon: [["system.bonuses.mwak.attack", "add", "{halfProf}"], ["system.bonuses.mwak.damage", "add", "{halfProf}"],
+              ["system.bonuses.rwak.attack", "add", "{halfProf}"], ["system.bonuses.rwak.damage", "add", "{halfProf}"]],
+            armor: [["system.attributes.ac.bonus", "add", "+{halfProf}"]] } }),
+        OPT("equipment", "Enhance Equipment", "degrade", "Magical bonuses to attack, damage or AC from a weapon, armor or shield are suppressed.")
+      ] }],
+      ["Enhance Poison", "enhancement", 0, "Corrosive Poison and Enhance Virulence options for poisons.", { options: [
+        OPT("corrosive", "Corrosive Poison", "enhance", "A natural weapon or object that deals poison damage deals acid damage instead."),
+        OPT("virulence", "Enhance Virulence", "degrade", "Saves against the poison (or a poisonous natural weapon) are made with advantage."),
+        OPT("virulence", "Enhance Virulence", "enhance", "Saves against the poison (or the next hit of a poisonous natural weapon) are made with disadvantage.")
+      ] }],
+      ["Enhance Size", "enhancement", 0, "Enhance Capacity and Improved Flexibility options.", { options: [
+        OPT("capacity", "Enhance Capacity", "degrade", "The creature's carrying capacity is quartered.",
+          { changes: [["system.attributes.encumbrance.multipliers.overall", "multiply", 0.25]],
+            augments: [{ key: "eighth", label: "Reduce to 1/8 instead", cost: 1 }] }),
+        OPT("capacity", "Enhance Capacity", "enhance", "The creature's carrying capacity is doubled.",
+          { changes: [["system.attributes.encumbrance.multipliers.overall", "multiply", 2]],
+            augments: [{ key: "quadruple", label: "Multiply by 4 instead", cost: 1 }] }),
+        OPT("flexibility", "Improved Flexibility", "degrade", "The creature squeezes as if one size larger."),
+        OPT("flexibility", "Improved Flexibility", "enhance", "The creature squeezes as if one size smaller.")
+      ] }],
+      ["False Energy", "enhancement", 0, "Ignore Exhaustion and Resist Debilitation options.", { options: [
+        OPT("exhaustion", "Ignore Exhaustion", "enhance", "The creature treats its exhaustion level as lower by your proficiency bonus."),
+        OPT("debilitation", "Resist Debilitation", "enhance", "The creature ignores a reduction to one ability score, up to twice your proficiency bonus.")
+      ] }],
+      ["Manipulate Hardness", "enhancement", 0, "Enhance: resistance to bludgeoning, piercing and slashing. Degrade: vulnerability to them.", { options: [
+        OPT("hardness", "Manipulate Hardness", "degrade", "An object gains vulnerability to bludgeoning, piercing and slashing damage (losing resistance or immunity instead if it has it).",
+          { changes: [["system.traits.dv.value", "add", "bludgeoning"], ["system.traits.dv.value", "add", "piercing"], ["system.traits.dv.value", "add", "slashing"]],
+            augments: [{ key: "creature", label: "Affect a creature", cost: 2 }] }),
+        OPT("hardness", "Manipulate Hardness", "enhance", "An object gains resistance to bludgeoning, piercing and slashing damage.",
+          { changes: [["system.traits.dr.value", "add", "bludgeoning"], ["system.traits.dr.value", "add", "piercing"], ["system.traits.dr.value", "add", "slashing"]],
+            augments: [{ key: "creature", label: "Affect a creature", cost: 2 }] })
+      ] }],
+      ["Mental Enhancement", "enhancement", 0, "Enhance Focus and Enhance Mind options.", { options: [
+        OPT("focus", "Enhance Focus", "degrade", "The creature cannot add its proficiency bonus to skill or tool checks."),
+        OPT("focus", "Enhance Focus", "enhance", "For one chosen skill or tool, the creature can treat a check as a 10 instead of rolling."),
+        OPT("mind", "Enhance Mind", "degrade", "Disadvantage on Intelligence, Wisdom and Charisma checks.",
+          { changes: ["int", "wis", "cha"].map(a => [`system.abilities.${a}.check.roll.mode`, "add", -1]) }),
+        OPT("mind", "Enhance Mind", "enhance", "Advantage on Intelligence, Wisdom and Charisma checks.",
+          { changes: ["int", "wis", "cha"].map(a => [`system.abilities.${a}.check.roll.mode`, "add", 1]) })
+      ] }],
+      ["Muffle Sound", "enhancement", 0, "Muffle or amplify the target's sounds.", { options: [
+        OPT("sound", "Muffle Sound", "degrade", "Perception checks to hear the target have advantage, and it has disadvantage on Stealth.",
+          { changes: [["system.skills.ste.roll.mode", "add", -1]] }),
+        OPT("sound", "Muffle Sound", "enhance", "Perception checks to hear the target have disadvantage.")
+      ] }],
+      ["Physical Enhancement", "enhancement", 0, "Enhance Physique and Superior Reflexes options.", { options: [
+        OPT("physique", "Enhance Physique", "degrade", "Disadvantage on Strength, Dexterity and Constitution checks.",
+          { changes: ["str", "dex", "con"].map(a => [`system.abilities.${a}.check.roll.mode`, "add", -1]) }),
+        OPT("physique", "Enhance Physique", "enhance", "Advantage on Strength, Dexterity or Constitution checks (your choice).",
+          { choice: { label: "Ability", values: { str: "Strength", dex: "Dexterity", con: "Constitution" } },
+            changes: [["system.abilities.{choice}.check.roll.mode", "add", 1]] }),
+        OPT("reflexes", "Superior Reflexes", "degrade", "Disadvantage on initiative and no opportunity attacks (reroll initiative with disadvantage if already rolled, keeping the lower).",
+          { changes: [["system.attributes.init.roll.mode", "add", -1]] }),
+        OPT("reflexes", "Superior Reflexes", "enhance", "Advantage on initiative and one opportunity attack each round without using a reaction (reroll initiative with advantage if already rolled, keeping the higher).",
+          { changes: [["system.attributes.init.roll.mode", "add", 1]] })
+      ] }],
+      ["Speed Control", "enhancement", 0, "Enhance: +10 ft to a speed (more at higher levels). Degrade: halve a speed.", { options: [
+        OPT("speed", "Speed Control", "degrade", "One movement speed is halved.",
+          { choice: SPEEDS, changes: [["system.attributes.movement.{choice}", "multiply", 0.5]],
+            augments: [{ key: "disengage", label: "The creature cannot Disengage", cost: 1 }, { key: "remove", label: "Remove a special speed instead (flyers glide down)", cost: 1 }] }),
+        OPT("speed", "Speed Control", "enhance", "One movement speed gains +10 ft (+15 at 5th, +20 at 11th, +25 at 17th level).",
+          { choice: SPEEDS, changes: [["system.attributes.movement.{choice}", "add", "{speedBonus}"]] })
+      ] }],
+      ["Staunch Resistance", "enhancement", 0, "Enhance: proficiency in one saving throw. Degrade: disadvantage on all saving throws.", { options: [
+        OPT("staunch", "Staunch Resistance", "degrade", "Disadvantage on all saving throws.",
+          { changes: ["str", "dex", "con", "int", "wis", "cha"].map(a => [`system.abilities.${a}.save.roll.mode`, "add", -1]) }),
+        OPT("staunch", "Staunch Resistance", "enhance", "Proficiency in one saving throw of your choice.",
+          { choice: ABILITIES, changes: [["system.abilities.{choice}.proficient", "upgrade", 1]] })
+      ] }],
+      ["Steal Ability", "enhancement", 0, "Degrade: Steal Senses and Still Tongue options.", { options: [
+        OPT("senses", "Steal Senses", "degrade", "The creature is blinded or deafened (your choice), or loses one special sense.",
+          { cost: 1, choice: { label: "Condition", values: { blinded: "Blinded", deafened: "Deafened" } }, statuses: ["{choice}"] }),
+        OPT("tongue", "Still Tongue", "degrade", "The creature cannot speak or provide verbal components (or loses another means of communication).")
+      ] }],
+      ["Weight Control", "enhancement", 0, "Change the weight of a creature or object.", { options: [
+        OPT("weight", "Weight Control", "degrade", "The target's weight doubles, its speeds drop by 10 ft and it cannot Dash.",
+          { changes: ["walk", "fly", "swim", "climb", "burrow"].map(m => [`system.attributes.movement.${m}`, "add", -10]) }),
+        OPT("weight", "Weight Control", "enhance", "Make a Tiny target weightless (Small at 5th, Medium at 11th, Large at 17th level); one size larger is half-weight.")
+      ] }],
       ["Dual Enhancement", "other", 0, "Apply two options or two talents with one casting.", { cost: 1, applies: ["enhance", "degrade"] }],
       ["Bestow Sentience", "other", 1, "Grant lasting sentience to beasts, plants or items (11th level).", { cost: 3 }],
       ["Referential Enhancements", "other", 1, "Mass enhancements over a 30 ft sphere for a week (15th level).", { cost: 2 }],

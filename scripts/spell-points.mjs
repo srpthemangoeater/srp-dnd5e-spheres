@@ -118,11 +118,20 @@ export function computeTalents(actor) {
   const bonus = Number(flags.talentBonus) || 0;
   const spheres = actor.items.filter(i => isFeatureType(i, "sphere"));
   const owned = new Set(spheres.map(i => itemFlags(i).sphere ?? i.system.identifier));
+  // Each sphere the actor has makes one associated blast type free (with Destruction): one chosen as that sphere's
+  // free pick, or else the first one the actor has.
+  const sphereBlast = new Map();
+  // Blast types from numbered free picks (Destruction's first pick, Extra Blast Type) are free on their own account.
+  const otherPick = i => itemFlags(i).freePick && (typeof itemFlags(i).freePickSlot === "number");
+  const blastTypes = actor.items.filter(i => isFeatureType(i, "talent") && itemFlags(i).free && !otherPick(i)
+    && owned.has(itemFlags(i).free.toLowerCase()))
+    .sort((a, b) => (itemFlags(b).freePick ? 1 : 0) - (itemFlags(a).freePick ? 1 : 0) || (a.sort - b.sort));
+  for ( const t of blastTypes ) if ( !sphereBlast.has(itemFlags(t).free) ) sphereBlast.set(itemFlags(t).free, t.id);
   const isFree = item => {
     const { free, bonusTalent, freePick, builtIn } = itemFlags(item);
     // Tradition/boon grants, talents included with a sphere and first-gain picks cost nothing.
     if ( bonusTalent || freePick || builtIn ) return true;
-    return !!free && owned.has(free.toLowerCase());
+    return !!free && (sphereBlast.get(free) === item.id);
   };
   // Items taken with an override (GM gift, feat, ...) sit outside the magic talent budget.
   const isOverride = item => !!itemFlags(item).override;

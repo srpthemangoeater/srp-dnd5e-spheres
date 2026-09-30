@@ -1,0 +1,50 @@
+<div class="custom-talent-root">
+    <p class="hint">{{ localize "DND5E-SPHERES.Custom.Intro" }}</p>
+    <label class="field">
+        <span>{{ localize "DND5E-SPHERES.Custom.Name" }}</span>
+        <input type="text" name="name" value="{{ state.name }}" required autofocus>
+    </label>
+    <div class="row">
+        <label class="field">
+            <span>{{ localize "DND5E-SPHERES.Custom.Sphere" }}</span>
+            <select name="sphere">{{#each spheres}}<option value="{{ key }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}</select>
+        </label>
+        <label class="field">
+            <span>{{ localize "DND5E-SPHERES.Custom.Category" }}</span>
+            <select name="category">{{#each categories}}<option value="{{ key }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}</select>
+        </label>
+    </div>
+    <div class="row">
+        <label class="field">
+            <span>{{ localize "DND5E-SPHERES.Custom.Cost" }}</span>
+            <input type="number" name="cost" value="{{ state.cost }}" step="1" min="0" placeholder="—">
+        </label>
+        <label class="field">
+            <span>{{ localize "DND5E-SPHERES.Custom.Applies" }}</span>
+            <select name="applies">{{#each appliesOptions}}<option value="{{ key }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}</select>
+        </label>
+    </div>
+    <p class="hint">{{ localize "DND5E-SPHERES.Custom.CostHint" }}</p>
+    <div class="row">
+        <label class="field">
+            <span>{{ localize "DND5E-SPHERES.Custom.DamageType" }}</span>
+            <select name="dt">{{#each damageTypes}}<option value="{{ key }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}</select>
+        </label>
+        <label class="field">
+            <span>{{ localize "DND5E-SPHERES.Custom.Bonus" }}</span>
+            <input type="text" name="bonus" value="{{ state.bonus }}" placeholder="@prof">
+        </label>
+    </div>
+    <div class="row checks">
+        <label class="check"><input type="checkbox" name="advanced" {{#if state.advanced}}checked{{/if}}> {{ localize "DND5E-SPHERES.Advanced" }}</label>
+        <label class="check"><input type="checkbox" name="free" {{#if state.free}}checked{{/if}}> {{ localize "DND5E-SPHERES.Custom.Free" }}</label>
+    </div>
+    <label class="field">
+        <span>{{ localize "DND5E-SPHERES.Custom.Description" }}</span>
+        <textarea name="description" rows="6">{{ state.description }}</textarea>
+    </label>
+    <footer class="custom-talent-footer">
+        <button type="button" data-action="cancel">{{ localize "Cancel" }}</button>
+        <button type="submit" class="primary"><i class="fas fa-check" inert></i> {{#if editing}}{{ localize "DND5E-SPHERES.Custom.Save" }}{{else}}{{ localize "DND5E-SPHERES.Custom.Create" }}{{/if}}</button>
+    </footer>
+</div>

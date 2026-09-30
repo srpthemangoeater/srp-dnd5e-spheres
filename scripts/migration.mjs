@@ -2,10 +2,10 @@ import { MODULE_ID, PACKS } from "./constants.mjs";
 import { isFeatureType, itemFlags } from "./spell-points.mjs";
 
 /** Data version of sphere and talent items. Raise it when their module data changes shape. */
-const DATA_VERSION = "0.6.0";
+const DATA_VERSION = "0.7.0";
 
 /** Module flags that always follow the compendium entry. */
-const SYNCED_FLAGS = ["abilities", "packages", "template", "shapeOptions", "cost"];
+const SYNCED_FLAGS = ["abilities", "packages", "template", "shapeOptions", "cost", "options", "freePicks", "repeatable"];
 
 export function registerMigrationSetting() {
   game.settings.register(MODULE_ID, "dataVersion", { scope: "world", config: false, type: String, default: "" });
@@ -48,6 +48,7 @@ const sourceKey = item => `${item.system.type?.value}|${itemFlags(item).sphere}|
 /** The update that brings one item in line with its compendium entry, or null if nothing changed. */
 function itemUpdate(item, sources) {
   if ( !isFeatureType(item, "sphere") && !isFeatureType(item, "talent") ) return null;
+  if ( itemFlags(item).custom ) return null;
   const source = sources.get(sourceKey(item));
   if ( !source ) return null;
   const from = itemFlags(source);

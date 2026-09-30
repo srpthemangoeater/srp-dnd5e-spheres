@@ -101,7 +101,7 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
    * `subItem` and `sub` the item and activity of the chosen ability. `groups[key]` is a talent id (or a Set for
    * multi-select groups), `augments` holds keys.
    */
-  #state = { pkg: "", subItem: "", sub: "", groups: {}, augments: new Set() };
+  #state = { pkg: "", subItem: "", sub: "", groups: {}, augments: new Set(), option: "", choice: "" };
 
   /** @override */
   get title() {
@@ -275,10 +275,26 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     const hasTalent = name => actor.items.some(i => i.name === name && isFeatureType(i, "talent"));
     const castKeys = [this.meta.key, cast.key];
     const chosenTalents = groups.flatMap(g => g.options.filter(o => o.selected)).map(o => actor.items.get(o.id));
+
+    // A chosen talent with options (e.g. Physical Enhancement): pick one that fits this ability (enhance or degrade).
+    const optionTalent = chosenTalents.find(t => itemFlags(t).options?.some(o => !o.mode || (o.mode === cast.key)));
+    const optionList = (itemFlags(optionTalent).options ?? []).filter(o => !o.mode || (o.mode === cast.key));
+    const option = optionList.find(o => o.key === this.#state.option) ?? optionList[0] ?? null;
+    const choiceKeys = Object.keys(option?.choice?.values ?? {});
+    const choice = choiceKeys.includes(this.#state.choice) ? this.#state.choice : (choiceKeys[0] ?? "");
+    const optionGroup = optionTalent ? {
+      talent: optionTalent.name,
+      options: optionList.map(o => ({ key: o.key, name: o.name, summary: o.summary, cost: o.cost ?? null,
+        effect: !!(o.changes || o.statuses), selected: o === option })),
+      choice: option?.choice ? { label: option.choice.label,
+        values: Object.entries(option.choice.values).map(([key, label]) => ({ key, label, selected: key === choice })) } : null
+    } : null;
     const augments = (this.isRoot && !this.subMeta) ? [] : [
       ...(cast.augments ?? []).filter(a => !a.talent || hasTalent(a.talent)).map(a => ({
         key: `base.${a.key}`, label: a.label, cost: a.cost, template: a.template ?? null
       })),
+      // Augments of the chosen option (e.g. Speed Control's degrade).
+      ...(option?.augments ?? []).map(a => ({ key: `opt.${a.key}`, label: a.label, cost: a.cost })),
       // Area options of the chosen blast shape (e.g. Sculpt as a cone or a line).
       ...chosenTalents.flatMap(t => (itemFlags(t).shapeOptions ?? []).filter(o => !o.talent || hasTalent(o.talent)).map(o => ({
         key: `shape.${o.key}`, label: o.label, cost: o.cost, template: o.template, shape: t.name
@@ -292,7 +308,8 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const selectedTalents = groups.flatMap(g => g.options.filter(o => o.selected));
     const selectedAugments = augments.filter(a => a.selected);
-    const total = Math.max(0, (cast.cost ?? 0)
+    // An option with its own cost replaces the ability's base cost.
+    const total = Math.max(0, (option?.cost ?? cast.cost ?? 0)
       + selectedTalents.reduce((s, o) => s + o.cost, 0)
       + selectedAugments.reduce((s, a) => s + a.cost, 0));
 
@@ -307,6 +324,7 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       ?? chosenTalents.map(t => itemFlags(t).template).find(_ => _) ?? null;
     return {
       groups, augments, total, cap: data.cap, pool, overCap, noPool, overPool, needsChoice, template,
+      optionGroup, option, choice, optionTalent,
       area: template ? areaLabel(template) : null,
       canCast: !overCap && !noPool && !overPool && !needsChoice,
       selectedTalents: selectedTalents.map(o => actor.items.get(o.id)),
@@ -356,9 +374,19 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       path: this.#path(),
       info: activityInfo(this.subActivity ?? this.activity),
       description: sub ? sectionText(this.subItem, sub.name) : this.#abilitySummary(),
+      damage: this.#damagePreview(opts),
       dc: data.dc,
       attack: data.attack
     };
+  }
+
+  /** The damage or healing this cast will roll with the current choices, e.g. "3d8 fire". */
+  #damagePreview(opts) {
+    const effect = this.#effect(opts);
+    if ( !effect?.formula ) return null;
+    const formula = Roll.replaceFormulaData(effect.formula, this.actor.getRollData(), { missing: "0" });
+    const type = effect.damageType ? CONFIG.DND5E.damageTypes[effect.damageType]?.label ?? effect.damageType : "";
+    return `${formula}${type ? ` ${type.toLowerCase()}` : ""}`;
   }
 
   /** @override */
@@ -385,7 +413,14 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     else if ( name?.startsWith("group.") ) {
       const key = name.slice(6);
       this.#state.groups[key] = value;
+      Object.assign(this.#state, { option: "", choice: "" });
+      for ( const k of [...this.#state.augments] ) if ( k.startsWith("opt.") ) this.#state.augments.delete(k);
     }
+    else if ( name === "option" ) {
+      Object.assign(this.#state, { option: value, choice: "" });
+      for ( const k of [...this.#state.augments] ) if ( k.startsWith("opt.") ) this.#state.augments.delete(k);
+    }
+    else if ( name === "choice" ) this.#state.choice = value;
     else if ( name?.startsWith("multi.") ) {
       const [, key, id] = name.split(".");
       if ( checked ) this.#state.groups[key].add(id);
@@ -528,7 +563,37 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       augmentDetails,
       total: opts.total,
       formula: effect?.formula ?? null,
-      damageType: effect?.damageType ?? null
+      fxKey: effect?.key ?? null,
+      damageType: effect?.damageType ?? null,
+      option: opts.option ? { talent: opts.optionTalent.name, name: opts.option.name, mode: opts.option.mode,
+        choice: opts.option.choice?.values?.[opts.choice] ?? null, summary: opts.option.summary } : null,
+      effect: this.#effectData(opts)
+    };
+  }
+
+  /**
+   * The Active Effect a chosen option applies to its targets (Enhancement), with its placeholders filled in:
+   * {choice} (the choice made), {speedBonus} (10 ft, +5 ft at 5th, 11th and 17th level) and {halfProf}.
+   */
+  #effectData(opts) {
+    const option = opts.option;
+    if ( !option || (!option.changes && !option.statuses) ) return null;
+    const level = casterLevel(this.actor);
+    const prof = this.actor.system.attributes?.prof ?? 0;
+    const vars = { choice: opts.choice, speedBonus: 5 + (5 * tierDice(level)), halfProf: Math.floor(prof / 2) };
+    const fill = v => typeof v === "string" ? v.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m) : v;
+    const list = Array.isArray(option.changes) ? option.changes : (option.changes?.[opts.choice] ?? []);
+    const choice = option.choice?.values?.[opts.choice];
+    const mode = game.i18n.localize(`DND5E-SPHERES.Cast.Mode.${option.mode}`);
+    const duration = this.#activityToUse(opts).duration;
+    return {
+      name: `${option.name}${choice ? ` (${choice})` : ""}: ${mode}`,
+      img: opts.optionTalent?.img ?? this.item.img,
+      description: `<p>${option.summary}</p>`,
+      changes: list.map(([key, type, value]) => ({ key: fill(key), type, value: String(fill(value)) })),
+      statuses: (option.statuses ?? []).map(fill),
+      duration: duration?.units && Number.isNumeric(duration.value) ? { value: Number(duration.value), units: `${duration.units}s` } : null,
+      concentration: !!duration?.concentration && !opts.selectedAugments.some(a => a.key === "base.noConc")
     };
   }
 
@@ -585,7 +650,25 @@ function onPreActivityConsumption(activity) {
   }
 }
 
+/**
+ * Damage rolled from a sphere chat card uses that card's formula (e.g. an empowered blast), not the formula of the
+ * caster's latest cast, and its damage type.
+ */
+function onPreRollDamage(config, dialog, message) {
+  if ( !abilityMeta(config.subject) ) return;
+  const id = config.event?.target?.closest?.("[data-message-id]")?.dataset.messageId ?? message?.data?.system?.origin;
+  const cast = game.messages.get(id)?.flags?.[MODULE_ID]?.cast;
+  if ( !cast?.formula || !cast.fxKey ) return;
+  for ( const roll of config.rolls ?? [] ) {
+    const spheres = roll.data?.spheres;
+    if ( !spheres?.fx ) continue;
+    roll.data.spheres = { ...spheres, fx: { ...spheres.fx, [cast.fxKey]: cast.formula } };
+    if ( cast.damageType && roll.options ) roll.options.type = cast.damageType;
+  }
+}
+
 export function registerCastHooks() {
   Hooks.on("dnd5e.preUseActivity", onPreUseActivity);
+  Hooks.on("dnd5e.preRollDamageV2", onPreRollDamage);
   Hooks.on("dnd5e.preActivityConsumption", onPreActivityConsumption);
 }

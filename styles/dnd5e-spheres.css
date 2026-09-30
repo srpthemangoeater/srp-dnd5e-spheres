@@ -603,3 +603,21 @@
 .cast-dialog .cast-ability .source { font-size: var(--font-size-10, 10px); opacity: 0.65; font-style: italic; }
 .cast-dialog .cast-package .borrowed { font-size: var(--font-size-10, 10px); opacity: 0.65; font-style: italic; }
 .cast-dialog .cast-area { font-size: var(--font-size-12, 12px); color: #b57a0c; }
+.cast-dialog .cast-damage { font-size: var(--font-size-12, 12px); color: #b57a0c; font-weight: bold; }
+.cast-dialog .option-summary { font-size: var(--font-size-12, 12px); opacity: 0.85; padding: 0 4px 4px 24px; display: block; }
+.cast-dialog .option-choice { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.cast-dialog .option-choice select { flex: 1; }
+.cast-dialog .effect-mark { font-size: 10px; color: #b57a0c; }
+.dnd5e-spheres-card .sc-effect-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.dnd5e-spheres-card .sc-effect-row .sc-name { flex: 1; }
+/* Custom talent dialog */
+.custom-talent .custom-talent-root { display: flex; flex-direction: column; gap: 8px; }
+.custom-talent .field { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.custom-talent .field > span { font-size: var(--font-size-12, 12px); font-weight: bold; }
+.custom-talent .row { display: flex; gap: 8px; }
+.custom-talent .row.checks { gap: 16px; }
+.custom-talent .hint { margin: 0; opacity: 0.75; font-size: var(--font-size-12, 12px); }
+.custom-talent textarea { min-height: 100px; resize: vertical; }
+.custom-talent .custom-talent-footer { display: flex; justify-content: flex-end; gap: 8px; }
+.custom-talent .custom-talent-footer button { flex: none; width: auto; padding: 0 16px; }
+.dnd5e-spheres-content .spheres-tag.custom { background: rgba(80, 120, 200, 0.2); }

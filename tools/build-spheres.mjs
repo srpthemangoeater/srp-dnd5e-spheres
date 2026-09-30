@@ -338,7 +338,10 @@ export function buildSpherePacks({ feat, docId, escape, SOURCE, STATS }) {
           + (extra.packages ? `<p><strong>Package:</strong> ${extra.packages.map(escape).join(" or ")}.</p>` : "")
           + (extra.template ? `<p><strong>Area:</strong> ${areaText(extra.template)}${extra.shapeOptions?.length
             ? `; ${extra.shapeOptions.map(o => `${escape(o.label.toLowerCase())} (${o.cost} SP)`).join(", ")}` : ""}.</p>` : "")
-          + picksText(talentPicks, [], "this package")
+          + (extra.options?.length ? extra.options.map(o => `<p><strong>${escape(o.name)}</strong> (${o.mode}${o.cost ? `, ${o.cost} SP` : ""}): ${escape(o.summary)}`
+            + (o.augments?.length ? ` <em>Augments: ${o.augments.map(x => `${escape(x.label)} (${x.cost} SP)`).join("; ")}.</em>` : "") + "</p>").join("") : "")
+          + (extra.options?.some(o => o.changes || o.statuses) ? "<p><em>Options with effects can be applied to targets from the chat card.</em></p>" : "")
+          + picksText(talentPicks, [], extra.repeatable ? "this talent" : "this package")
           + built.html
           + wikiLink(sphere.key, `${sphere.name} sphere`),
         flags: { sphere: sphere.key, category, advanced: !!advanced, ...extra,

@@ -121,6 +121,9 @@
                 <button type="button" class="spheres-button" data-spheres-action="browse">
                     <i class="fas fa-book-atlas" inert></i> {{ localize "DND5E-SPHERES.Browser.Open" }}
                 </button>
+                <button type="button" class="spheres-button" data-spheres-action="customTalent" data-tooltip="{{ localize "DND5E-SPHERES.Custom.Title" }}">
+                    <i class="fas fa-wand-sparkles" inert></i> {{ localize "DND5E-SPHERES.Custom.Button" }}
+                </button>
                 {{/if}}
             </span>
         </div>
@@ -159,6 +162,7 @@
                 {{#> row row=row type="talent" editable=@root.spheres.editable }}
                     {{#if row.category}}<span class="spheres-tag category">{{ row.category }}</span>{{/if}}
                     {{#if row.advanced}}<span class="spheres-tag advanced">{{ localize "DND5E-SPHERES.Advanced" }}</span>{{/if}}
+                    {{#if row.custom}}<span class="spheres-tag custom">{{ localize "DND5E-SPHERES.Custom.Badge" }}</span>{{/if}}
                     {{#if row.override}}<span class="spheres-tag override" data-tooltip="{{#if row.overrideNote}}{{ row.overrideNote }}{{else}}{{ localize "DND5E-SPHERES.Override.NoNote" }}{{/if}}">{{ localize "DND5E-SPHERES.Override.Badge" }}{{#if row.overrideNote}}: {{ row.overrideNote }}{{/if}}</span>
                     {{else if row.included}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.Included" }}</span>
                     {{else if row.freePick}}<span class="spheres-tag free">{{ localize "DND5E-SPHERES.FreePicks.Badge" }}</span>

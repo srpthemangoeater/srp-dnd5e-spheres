@@ -4,6 +4,7 @@ import { CastDialog, registerCastHooks } from "./cast.mjs";
 import { postItemToChat, postTraditionCard, registerChatHooks, resolveRow } from "./chat.mjs";
 import { registerConfig } from "./config.mjs";
 import { registerConsumptionHooks } from "./consumption.mjs";
+import { CustomTalentDialog } from "./custom-talent.mjs";
 import { FreePicksDialog, registerFreePickHooks } from "./free-picks.mjs";
 import { migrateWorld, registerMigrationSetting } from "./migration.mjs";
 import { registerSettings } from "./settings.mjs";
@@ -36,7 +37,8 @@ Hooks.once("ready", () => {
     openBuilder: actor => new TraditionBuilder(actor).render({ force: true }),
     openCast: activity => new CastDialog(activity).render({ force: true }),
     openBrowser: actor => new SpheresBrowser(actor).render({ force: true }),
-    openFreePicks: sphere => new FreePicksDialog(sphere).render({ force: true })
+    openFreePicks: sphere => new FreePicksDialog(sphere).render({ force: true }),
+    openCustomTalent: (actor, item) => new CustomTalentDialog(actor, item).render({ force: true })
   };
   migrateWorld();
 });

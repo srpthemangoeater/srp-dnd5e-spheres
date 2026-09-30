@@ -43,6 +43,7 @@
     <p class="cast-description">{{ description }}</p>
     {{#if info}}<div class="ability-info">{{ info }}</div>{{/if}}
     {{/if}}
+    {{#if damage}}<div class="cast-damage"><i class="fas fa-burst" inert></i> {{ localize "DND5E-SPHERES.Cast.Damage" damage=damage }}</div>{{/if}}
     {{#if area}}<div class="cast-area"><i class="fas fa-draw-polygon" inert></i> {{ localize "DND5E-SPHERES.Cast.Area" area=area }}</div>{{/if}}
 
     <div class="cast-stats">
@@ -83,6 +84,32 @@
         {{/if}}
     </fieldset>
     {{/each}}
+
+    {{#if optionGroup}}
+    <fieldset class="cast-option-group">
+        <legend>{{ optionGroup.talent }}</legend>
+        <ul class="cast-options">
+            {{#each optionGroup.options}}
+            <li data-tooltip="{{ summary }}" data-tooltip-direction="LEFT">
+                <label class="check">
+                    <input type="radio" name="option" value="{{ key }}" {{#if selected}}checked{{/if}}>
+                    <span class="name">{{ name }}{{#if effect}} <i class="fas fa-bolt effect-mark" data-tooltip="{{ localize "DND5E-SPHERES.Cast.HasEffect" }}" inert></i>{{/if}}</span>
+                </label>
+                {{#if cost}}<span class="badge cost">{{ cost }} SP</span>{{/if}}
+            </li>
+            {{#if selected}}<li class="option-summary">{{ summary }}</li>{{/if}}
+            {{/each}}
+        </ul>
+        {{#if optionGroup.choice}}
+        <label class="option-choice">
+            <span>{{ optionGroup.choice.label }}</span>
+            <select name="choice">
+                {{#each optionGroup.choice.values}}<option value="{{ key }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}
+            </select>
+        </label>
+        {{/if}}
+    </fieldset>
+    {{/if}}
 
     {{#if augments.length}}
     <fieldset>

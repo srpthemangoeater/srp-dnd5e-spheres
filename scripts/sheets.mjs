@@ -3,6 +3,7 @@ import { FEATURE_TYPES, MODULE_ID, TEMPLATES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { SpheresBrowser } from "./browser.mjs";
 import { CastDialog } from "./cast.mjs";
+import { CustomTalentDialog } from "./custom-talent.mjs";
 import { postItemToChat, postTraditionCard } from "./chat.mjs";
 import { FreePicksDialog, hasRemainingPicks } from "./free-picks.mjs";
 import { computeSpheres, computeTalents, drawbackWeight, isFeatureType, itemFlags, spellPointState } from "./spell-points.mjs";
@@ -68,6 +69,7 @@ export function buildSpheresContext(actor, editable) {
   const talentEntry = t => ({
     ...entry(t),
     advanced: !!itemFlags(t).advanced,
+    custom: !!itemFlags(t).custom,
     freePick: !!itemFlags(t).freePick && !itemFlags(t).included,
     included: !!(itemFlags(t).included || itemFlags(t).builtIn),
     free: talentData.isFree(t),
@@ -195,6 +197,9 @@ function activateContextMenu(actor, element) {
     { label: "DND5E-SPHERES.Override.Menu", icon: "fa-solid fa-unlock",
       visible: t => isTalentOrSphere(t) && !!itemOf(t) && actor.isOwner && (editing() || !!itemFlags(itemOf(t)).override),
       onClick: (e, t) => editOverride(itemOf(t)) },
+    { label: "DND5E-SPHERES.Custom.Edit", icon: "fa-solid fa-wand-sparkles",
+      visible: t => !!itemFlags(itemOf(t)).custom && actor.isOwner,
+      onClick: (e, t) => new CustomTalentDialog(actor, itemOf(t)).render({ force: true }) },
     { label: "DND5E-SPHERES.PostToChat", icon: "fa-solid fa-comment",
       onClick: (e, t) => isTradition(t) ? postTraditionCard(actor) : postItemToChat(itemOf(t)) },
     { label: "DND5E-SPHERES.EditTradition", icon: "fa-solid fa-pen-ruler",
@@ -283,6 +288,7 @@ export function activateSpheresListeners(actor, element) {
         }
         case "freePicks": return item && new FreePicksDialog(item).render({ force: true });
         case "browse": return new SpheresBrowser(actor).render({ force: true });
+        case "customTalent": return new CustomTalentDialog(actor).render({ force: true });
         case "builder": return new TraditionBuilder(actor).render({ force: true });
         case "createPool": return ensureSpellPointsItem(actor);
         case "spend": return adjustPool(actor, 1);
