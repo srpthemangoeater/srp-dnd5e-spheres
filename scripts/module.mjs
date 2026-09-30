@@ -7,6 +7,7 @@ import { registerConsumptionHooks } from "./consumption.mjs";
 import { CustomTalentDialog } from "./custom-talent.mjs";
 import { FreePicksDialog, registerFreePickHooks } from "./free-picks.mjs";
 import { migrateWorld, registerMigrationSetting } from "./migration.mjs";
+import { registerSocket } from "./socket.mjs";
 import { registerSettings } from "./settings.mjs";
 import { registerSheetTab, registerTidy } from "./sheets.mjs";
 import { computeSpheres, computeTalents, drawbackBonus, patchRollData, spellPointState } from "./spell-points.mjs";
@@ -40,5 +41,6 @@ Hooks.once("ready", () => {
     openFreePicks: sphere => new FreePicksDialog(sphere).render({ force: true }),
     openCustomTalent: (actor, item) => new CustomTalentDialog(actor, item).render({ force: true })
   };
+  registerSocket();
   migrateWorld();
 });

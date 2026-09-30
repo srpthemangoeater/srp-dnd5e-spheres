@@ -285,7 +285,7 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     const optionGroup = optionTalent ? {
       talent: optionTalent.name,
       options: optionList.map(o => ({ key: o.key, name: o.name, summary: o.summary, cost: o.cost ?? null,
-        effect: !!(o.changes || o.statuses), selected: o === option })),
+        effect: !!(o.changes || o.statuses || o.itemChanges), selected: o === option })),
       choice: option?.choice ? { label: option.choice.label,
         values: Object.entries(option.choice.values).map(([key, label]) => ({ key, label, selected: key === choice })) } : null
     } : null;
@@ -577,12 +577,14 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
    */
   #effectData(opts) {
     const option = opts.option;
-    if ( !option || (!option.changes && !option.statuses) ) return null;
+    if ( !option || (!option.changes && !option.statuses && !option.itemChanges) ) return null;
     const level = casterLevel(this.actor);
     const prof = this.actor.system.attributes?.prof ?? 0;
     const vars = { choice: opts.choice, speedBonus: 5 + (5 * tierDice(level)), halfProf: Math.floor(prof / 2) };
     const fill = v => typeof v === "string" ? v.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m) : v;
-    const list = Array.isArray(option.changes) ? option.changes : (option.changes?.[opts.choice] ?? []);
+    const pick = changes => Array.isArray(changes) ? changes : (changes?.[opts.choice] ?? []);
+    const list = pick(option.changes);
+    const itemList = pick(option.itemChanges);
     const choice = option.choice?.values?.[opts.choice];
     const mode = game.i18n.localize(`DND5E-SPHERES.Cast.Mode.${option.mode}`);
     const duration = this.#activityToUse(opts).duration;
@@ -591,6 +593,9 @@ export class CastDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       img: opts.optionTalent?.img ?? this.item.img,
       description: `<p>${option.summary}</p>`,
       changes: list.map(([key, type, value]) => ({ key: fill(key), type, value: String(fill(value)) })),
+      // Changes made to one of the target's items (a weapon, armor or shield) as a dnd5e enchantment.
+      itemTarget: itemList.length ? fill(option.target ?? "weapon") : null,
+      itemChanges: itemList.map(([key, type, value]) => ({ key: fill(key), type, value: String(fill(value)) })),
       statuses: (option.statuses ?? []).map(fill),
       duration: duration?.units && Number.isNumeric(duration.value) ? { value: Number(duration.value), units: `${duration.units}s` } : null,
       concentration: !!duration?.concentration && !opts.selectedAugments.some(a => a.key === "base.noConc")

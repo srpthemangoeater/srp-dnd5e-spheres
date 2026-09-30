@@ -7,10 +7,12 @@
 const NO_CONC = { key: "noConc", label: "Lasts without concentration", cost: 2 };
 
 /**
- * An Enhancement option: `mode` is "enhance" or "degrade". `changes` are Active Effect changes as
- * [key, type, value] (or an object of them per choice), with {choice}, {speedBonus} and {halfProf} filled in at cast.
+ * An Enhancement option: `mode` is "enhance" or "degrade". `changes` are Active Effect changes on the target
+ * creature as [key, type, value] (or an object of them per choice), with {choice}, {speedBonus} and {halfProf} filled
+ * in at cast. `itemChanges` go on one of the target's items instead (`target`: "weapon" or "armor"), as an enchantment.
  */
 const OPT = (key, name, mode, summary, opts={}) => ({ key: `${key}.${mode}`, name, mode, summary, ...opts });
+const EQUIPMENT = { label: "Equipment", values: { weapon: "Weapon", armor: "Armor or shield" } };
 const SPEEDS = { label: "Speed", values: { walk: "Walk", fly: "Fly", swim: "Swim", climb: "Climb", burrow: "Burrow" } };
 const ABILITIES = { label: "Saving throw", values: { str: "Strength", dex: "Dexterity", con: "Constitution",
   int: "Intelligence", wis: "Wisdom", cha: "Charisma" } };
@@ -518,25 +520,29 @@ export const SPHERES_A = [
           { cost: 1, changes: [["system.abilities.int.value", "upgrade", 10]] })
       ] }],
       ["Deadly Weapon", "enhancement", 0, "Keen Weapon, Pursuant Ammunition and Versatile Weapon options for weapons.", { options: [
-        OPT("keen", "Keen Weapon", "degrade", "A weapon, natural weapon or unarmed strike treats all damage dice as 1s and cannot score critical hits."),
-        OPT("keen", "Keen Weapon", "enhance", "A weapon, natural weapon or unarmed strike scores a critical hit on a 19 or 20."),
+        OPT("keen", "Keen Weapon", "degrade", "A weapon, natural weapon or unarmed strike treats all damage dice as 1s and cannot score critical hits.",
+          { target: "weapon", itemChanges: [["activities[attack].attack.critical.threshold", "override", 21]] }),
+        OPT("keen", "Keen Weapon", "enhance", "A weapon, natural weapon or unarmed strike scores a critical hit on a 19 or 20.",
+          { target: "weapon", itemChanges: [["activities[attack].attack.critical.threshold", "downgrade", 19]] }),
         OPT("pursuant", "Pursuant Ammunition", "degrade", "Ranged attacks with the weapon have disadvantage, and misses may veer toward the attacker's allies."),
         OPT("pursuant", "Pursuant Ammunition", "enhance", "Ranged attacks with the weapon treat the target's cover as one step lower."),
         OPT("versatile", "Versatile Weapon", "enhance", "A weapon, natural weapon or unarmed strike counts as a chosen material for bypassing resistance.",
-          { choice: { label: "Material", values: { silvered: "Silvered", adamantine: "Adamantine", magical: "Magical" } } })
+          { target: "weapon", choice: { label: "Material", values: { sil: "Silvered", ada: "Adamantine", mgc: "Magical" } },
+            itemChanges: [["system.properties", "add", "{choice}"]] })
       ] }],
       ["Energy Weapon", "enhancement", 0, "Enhance: a weapon deals an extra 1d6 acid, cold, fire, lightning, necrotic, radiant or thunder damage.", { options: [
         OPT("energy", "Energy Weapon", "enhance", "Weapon attacks deal an extra 1d6 damage of the chosen type (one instance per weapon).", {
           choice: { label: "Damage type", values: { acid: "Acid", cold: "Cold", fire: "Fire", lightning: "Lightning", necrotic: "Necrotic", radiant: "Radiant", thunder: "Thunder" } },
-          changes: [["system.bonuses.mwak.damage", "add", "1d6[{choice}]"], ["system.bonuses.rwak.damage", "add", "1d6[{choice}]"]] })
+          target: "weapon", itemChanges: [["system.damage.base.bonus", "add", "1d6[{choice}]"]] })
       ] }],
       ["Enhance Equipment", "enhancement", 0, "Enhance: equipment becomes magical with a bonus of half your proficiency bonus. Degrade: suppress magical bonuses.", { options: [
         OPT("equipment", "Enhance Equipment", "enhance", "A weapon or natural weapon gains a bonus to attack and damage rolls (armor or a shield: to AC) equal to half your proficiency bonus, and counts as magical.",
-          { choice: { label: "Equipment", values: { weapon: "Weapon", armor: "Armor or shield" } },
-            changes: { weapon: [["system.bonuses.mwak.attack", "add", "{halfProf}"], ["system.bonuses.mwak.damage", "add", "{halfProf}"],
-              ["system.bonuses.rwak.attack", "add", "{halfProf}"], ["system.bonuses.rwak.damage", "add", "{halfProf}"]],
-            armor: [["system.attributes.ac.bonus", "add", "+{halfProf}"]] } }),
-        OPT("equipment", "Enhance Equipment", "degrade", "Magical bonuses to attack, damage or AC from a weapon, armor or shield are suppressed.")
+          { choice: EQUIPMENT, target: "{choice}", itemChanges: {
+            weapon: [["system.magicalBonus", "upgrade", "{halfProf}"], ["system.properties", "add", "mgc"]],
+            armor: [["system.armor.magicalBonus", "upgrade", "{halfProf}"], ["system.properties", "add", "mgc"]] } }),
+        OPT("equipment", "Enhance Equipment", "degrade", "Magical bonuses to attack, damage or AC from a weapon, armor or shield are suppressed.",
+          { choice: EQUIPMENT, target: "{choice}", itemChanges: {
+            weapon: [["system.magicalBonus", "override", "0"]], armor: [["system.armor.magicalBonus", "override", "0"]] } })
       ] }],
       ["Enhance Poison", "enhancement", 0, "Corrosive Poison and Enhance Virulence options for poisons.", { options: [
         OPT("corrosive", "Corrosive Poison", "enhance", "A natural weapon or object that deals poison damage deals acid damage instead."),

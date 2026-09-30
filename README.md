@@ -214,6 +214,19 @@ speed changes, resistance or vulnerability, carrying capacity, conditions, extra
 targets** on the chat card: it creates an Active Effect on your targeted tokens (or the targets recorded when you
 cast), lasting as long as the ability and ending with your concentration unless cast without it.
 
+Options that affect equipment enchant the target's item instead (a dnd5e enchantment): Keen Weapon (critical hits on
+19-20, or none when degraded), Energy Weapon (+1d6 of the chosen type), Versatile Weapon (silvered, adamantine or
+magical), and Enhance Equipment (a magic bonus of half your proficiency bonus on a weapon, armor or shield, or
+suppressing it). If the target has several weapons (or armor pieces), you choose which one. Enchantments end with
+your concentration too.
+
+Players can apply effects to creatures they do not own (a monster, or its weapon): the active GM's client creates
+them. If no GM is online, a warning says so.
+
+Characters that still have the old separate Enhancement talents (Enhance Physique, Superior Reflexes, Keen Weapon,
+Enhance Mind and so on) get the talent that now holds them (Physical Enhancement, Deadly Weapon, Mental Enhancement...)
+once, when a GM loads the world; it is not added twice.
+
 ### Free talents when first gaining a sphere
 Adding a sphere to a character opens a picker for the talents it grants on first acquisition (for
 example Destruction: one blast type, which need not match a sphere you have, and one blast shape).

@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants.mjs";
+import { createEffects } from "./socket.mjs";
 import { drawbackRows, resolveDrawback } from "./drawbacks.mjs";
 import { getSetting } from "./settings.mjs";
 import { computeSpheres, isFeatureType, itemFlags } from "./spell-points.mjs";
@@ -136,9 +137,46 @@ function renderCard(flags, { canResolve, openSections }) {
   return parts.join("");
 }
 
+/** Items an option can enchant on an actor: weapons, or armor and shields. */
+const ARMOR_TYPES = ["light", "medium", "heavy", "shield", "natural"];
+const itemCandidates = (actor, target) => actor.items.filter(i => target === "armor"
+  ? (i.type === "equipment") && ARMOR_TYPES.includes(i.system.type?.value)
+  : i.type === "weapon");
+
+/**
+ * Choose the item to enchant on each target: its only equipped (or only) candidate, or ask when there are several.
+ * @returns {Promise<Map<Actor5e, Item5e>|null>}  null when the user cancels.
+ */
+async function chooseItems(actors, target) {
+  const chosen = new Map();
+  const ask = [];
+  for ( const actor of actors ) {
+    const list = itemCandidates(actor, target);
+    const equipped = list.filter(i => i.system.equipped);
+    if ( list.length === 1 ) chosen.set(actor, list[0]);
+    else if ( equipped.length === 1 && list.length > 1 ) ask.push({ actor, list, preferred: equipped[0] });
+    else if ( list.length ) ask.push({ actor, list, preferred: equipped[0] ?? list[0] });
+    else ui.notifications.warn(format(target === "armor" ? "DND5E-SPHERES.Chat.NoArmor" : "DND5E-SPHERES.Chat.NoWeapon", { name: actor.name }));
+  }
+  if ( !ask.length ) return chosen;
+  const content = ask.map(({ actor, list, preferred }, n) => `<div class="form-group"><label>${escape(actor.name)}</label>
+    <select name="item${n}">${list.map(i => `<option value="${i.id}" ${i === preferred ? "selected" : ""}>${escape(i.name)}${i.system.equipped ? " ✓" : ""}</option>`).join("")}</select></div>`).join("");
+  const result = await foundry.applications.api.DialogV2.prompt({
+    window: { title: localize(target === "armor" ? "DND5E-SPHERES.Chat.ChooseArmor" : "DND5E-SPHERES.Chat.ChooseWeapon") },
+    content,
+    ok: { label: localize("DND5E-SPHERES.Chat.ApplyEffect"), callback: (event, button) => Object.fromEntries(new FormData(button.form)) },
+    rejectClose: false
+  });
+  if ( !result ) return null;
+  ask.forEach(({ actor }, n) => chosen.set(actor, actor.items.get(result[`item${n}`])));
+  return chosen;
+}
+
 /**
  * Apply a cast's Active Effect (an Enhancement option) to the user's targeted tokens, or else the targets recorded on
- * the message. It lasts as long as the ability and, when cast with concentration, ends with the caster's concentration.
+ * the message. Options that affect equipment enchant the target's weapon, armor or shield instead. Effects last as
+ * long as the ability and, when cast with concentration, end with the caster's concentration. Targets the user does
+ * not own are handled by the active GM.
  */
 export async function applyCastEffect(message) {
   const cast = message.flags?.[MODULE_ID]?.cast;
@@ -154,20 +192,28 @@ export async function applyCastEffect(message) {
   const caster = message.flags[MODULE_ID].actorUuid ? fromUuidSync(message.flags[MODULE_ID].actorUuid)
     : ChatMessage.getSpeakerActor(message.speaker);
   const concentration = effect.concentration ? caster?.effects.get(message.system?.concentration) : null;
-  const data = {
+  const base = {
     name: effect.name, img: effect.img, description: effect.description, origin: message.getAssociatedItem?.()?.uuid ?? caster?.uuid,
-    system: { changes: effect.changes }, statuses: effect.statuses ?? [],
     ...(effect.duration ? { duration: effect.duration } : {}),
     flags: { [MODULE_ID]: { cast: message.id }, ...(concentration ? { dnd5e: { dependentOn: concentration.uuid } } : {}) }
   };
-  const denied = [];
-  for ( const actor of actors ) {
-    if ( !actor.isOwner ) { denied.push(actor.name); continue; }
-    await actor.createEmbeddedDocuments("ActiveEffect", [foundry.utils.deepClone(data)]);
+
+  const entries = [];
+  if ( effect.changes?.length || effect.statuses?.length ) {
+    for ( const actor of actors ) entries.push({ parent: actor, data: { ...foundry.utils.deepClone(base),
+      system: { changes: effect.changes ?? [] }, statuses: effect.statuses ?? [] } });
   }
-  const applied = actors.length - denied.length;
+  if ( effect.itemChanges?.length ) {
+    const items = await chooseItems(actors, effect.itemTarget);
+    if ( !items ) return;
+    for ( const item of items.values() ) entries.push({ parent: item, data: { ...foundry.utils.deepClone(base),
+      name: `${effect.name} (${item.name})`, type: "enchantment", transfer: true, disabled: false,
+      system: { changes: effect.itemChanges } } });
+  }
+  if ( !entries.length ) return;
+  const { applied, sent } = await createEffects(entries, effect.name);
   if ( applied ) ui.notifications.info(format("DND5E-SPHERES.Chat.EffectApplied", { name: effect.name, count: applied }));
-  if ( denied.length ) ui.notifications.warn(format("DND5E-SPHERES.Chat.EffectDenied", { names: denied.join(", ") }));
+  if ( sent ) ui.notifications.info(format("DND5E-SPHERES.Chat.EffectSent", { name: effect.name, count: sent }));
 }
 
 /** Add the spheres block to a chat message: after the dnd5e card header, or at the top of plain messages. */
